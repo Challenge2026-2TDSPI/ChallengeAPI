@@ -6,6 +6,7 @@ C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\ChallengeA
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\ChallengeAPI.runtimeconfig.json
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\ChallengeAPI.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\ChallengeAPI.pdb
+C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\ChallengeAPI.xml
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Humanizer.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Microsoft.CodeAnalysis.dll
@@ -22,6 +23,7 @@ C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Microsoft.
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Mono.TextTemplating.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Oracle.EntityFrameworkCore.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Oracle.ManagedDataAccess.dll
+C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Scalar.AspNetCore.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
@@ -109,6 +111,7 @@ C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeA
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.csproj.CoreCompileInputs.cache
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.sourcelink.json
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\rjimswa.dswa.cache.json
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
@@ -121,6 +124,8 @@ C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\swae.build
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\Challeng.7B74CE33.Up2Date
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.dll
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\refint\ChallengeAPI.dll
+C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.xml
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.pdb
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ChallengeAPI.genruntimeconfig.cache
 C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\ref\ChallengeAPI.dll
+C:\Users\user\source\repos\ChallengeAPI\ChallengeAPI\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

@@ -11,6 +11,7 @@
           "Microsoft.EntityFrameworkCore": "8.0.0",
           "Microsoft.EntityFrameworkCore.Tools": "8.0.0",
           "Oracle.EntityFrameworkCore": "8.21.121",
+          "Scalar.AspNetCore": "2.14.11",
           "Swashbuckle.AspNetCore": "10.1.7"
         },
         "runtime": {
@@ -359,6 +360,14 @@
           "lib/netstandard2.1/Oracle.ManagedDataAccess.dll": {
             "assemblyVersion": "3.1.21.1",
             "fileVersion": "3.1.21.1"
+          }
+        }
+      },
+      "Scalar.AspNetCore/2.14.11": {
+        "runtime": {
+          "lib/net8.0/Scalar.AspNetCore.dll": {
+            "assemblyVersion": "2.14.11.0",
+            "fileVersion": "2.14.11.0"
           }
         }
       },
@@ -742,6 +751,13 @@
       "sha512": "sha512-RrSu5ZlhIqpV7mFauPfc2AkCsuWXA2cWCNXOBW+Wt7R8g6wqonWIWZN3iyhwr4mZMRrClJB/SRMtQzQMHuZPmg==",
       "path": "oracle.manageddataaccess.core/3.21.120",
       "hashPath": "oracle.manageddataaccess.core.3.21.120.nupkg.sha512"
+    },
+    "Scalar.AspNetCore/2.14.11": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-EthfC0++GjWX5JB84OUTsNlzRMr8v6zGinx8i2msKWitAkvGbvjBz7ET9XoUis4Z3M+iH6jIJ66uUGzZqmrSGg==",
+      "path": "scalar.aspnetcore/2.14.11",
+      "hashPath": "scalar.aspnetcore.2.14.11.nupkg.sha512"
     },
     "Swashbuckle.AspNetCore/10.1.7": {
       "type": "package",

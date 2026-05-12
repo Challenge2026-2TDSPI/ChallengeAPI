@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "iICoxDPs5Wk=",
+  "dgSpecHash": "uKphta3SdT8=",
   "success": true,
   "projectFilePath": "C:\\Users\\user\\source\\repos\\ChallengeAPI\\ChallengeAPI\\ChallengeAPI.csproj",
   "expectedPackageFiles": [
@@ -33,6 +33,7 @@
     "C:\\Users\\user\\.nuget\\packages\\mono.texttemplating\\2.2.1\\mono.texttemplating.2.2.1.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\oracle.entityframeworkcore\\8.21.121\\oracle.entityframeworkcore.8.21.121.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\oracle.manageddataaccess.core\\3.21.120\\oracle.manageddataaccess.core.3.21.120.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\scalar.aspnetcore\\2.14.11\\scalar.aspnetcore.2.14.11.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\swashbuckle.aspnetcore\\10.1.7\\swashbuckle.aspnetcore.10.1.7.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\10.1.7\\swashbuckle.aspnetcore.swagger.10.1.7.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\10.1.7\\swashbuckle.aspnetcore.swaggergen.10.1.7.nupkg.sha512",

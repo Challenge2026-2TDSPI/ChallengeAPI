@@ -1,230 +1,307 @@
-<<<<<<< HEAD
-# Challenge API - Clínica Veterinária
+# 🐾 CLYVO VET — ChallengeAPI
 
-API RESTful desenvolvida em ASP.NET Core para gerenciamento de tutores, pets, vacinas e consultas veterinárias.
-
-Projeto desenvolvido para o Challenge Sprint da FIAP utilizando Oracle Database, Entity Framework Core, Swagger e Scalar.
+> API RESTful para gestão da jornada contínua de saúde do pet.  
+> Challenge FIAP 2026 — Turma 2TDS — DevOps Tools & Cloud Computing Sprint 1
 
 ---
 
-# Tecnologias Utilizadas
+## 📋 Índice
 
-- ASP.NET Core
-- Entity Framework Core
-- Oracle Database
-- Swagger / OpenAPI
-- Scalar
-- C#
-- REST API
+- [Descrição do Projeto](#descrição-do-projeto)
+- [Benefícios para o Negócio](#benefícios-para-o-negócio)
+- [Arquitetura Macro](#arquitetura-macro)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Rotas da API](#rotas-da-api)
+- [Como Instalar (How To)](#como-instalar-how-to)
+- [Dockerfile](#dockerfile)
+- [Docker Compose](#docker-compose)
+- [Script Azure CLI](#script-azure-cli)
+- [Equipe](#equipe)
 
 ---
 
-# Estrutura do Projeto
+## 📌 Descrição do Projeto
 
-```plaintext
-Controllers/
-Data/
-Models/
-Migrations/
-Properties/
+A **CLYVO VET API** é uma solução REST desenvolvida em **.NET 8** com **Oracle Database**, criada para resolver a descontinuidade no cuidado preventivo de pets no Brasil.
+
+O sistema permite gerenciar o histórico completo de saúde dos animais — tutores, pets, vacinas e consultas veterinárias — de forma contínua e estruturada, transformando a experiência reativa (apenas emergências) em um modelo preventivo e proativo.
+
+---
+
+## 💼 Benefícios para o Negócio
+
+| Benefício | Impacto |
+|-----------|---------|
+| **Histórico longitudinal estruturado** | Clínicas acessam todo o histórico do pet em um lugar |
+| **Aumento de recorrência** | Vacinas e consultas registradas reduzem abandono de tratamentos |
+| **Maior LTV por pet** | Acompanhamento preventivo gera mais visitas planejadas |
+| **Redução de emergências evitáveis** | Protocolo preventivo diminui agravamentos desnecessários |
+| **Dados para decisão clínica** | Histórico estruturado apoia diagnósticos mais precisos |
+
+---
+
+## 🏗️ Arquitetura Macro
+
+```
+┌──────────────┐    HTTP :8080   ┌──────────────────────────────────────┐
+│   Usuário    │ ──────────────► │        Azure VM Linux Ubuntu          │
+│ (Postman /   │                 │  ┌───────────────┐  ┌─────────────┐  │
+│  Swagger /   │ ◄────────────── │  │  Container    │  │  Container  │  │
+│  Scalar)     │    JSON         │  │  API .NET 8   │◄►│  Oracle XE  │  │
+└──────────────┘                 │  │  porta 8080   │  │  porta 1521 │  │
+                                 │  └───────────────┘  └─────────────┘  │
+                                 │           └── Volume nomeado ─────────┘
+                                 └──────────────────────────────────────┘
 ```
 
 ---
 
-# Entidades da API
+## 🛠️ Tecnologias Utilizadas
 
-## Tutor
-Responsável pelos pets cadastrados.
-
-## Pet
-Animal cadastrado no sistema.
-
-## Vacina
-Vacinas aplicadas nos pets.
-
-## Consulta
-Consultas veterinárias realizadas.
+- ASP.NET Core 8.0
+- Entity Framework Core
+- Oracle Database (containerizado)
+- Swagger / OpenAPI
+- Scalar
+- Docker + Docker Compose
+- Microsoft Azure (VM Linux)
+- Azure CLI
+- Git / GitHub
 
 ---
 
-# Funcionalidades
+## 📁 Estrutura do Projeto
 
-CRUD completo de Tutores  
-CRUD completo de Pets  
-CRUD completo de Vacinas  
-CRUD completo de Consultas  
-
-GETs parametrizados  
-Relacionamentos entre entidades  
-Integração com Oracle Database  
-Migrations com EF Core  
-Documentação OpenAPI  
-
----
-
-# Endpoints Principais
-
-## Tutor
-
-| Método | Endpoint |
-|---|---|
-| GET | /api/Tutores |
-| GET | /api/Tutores/{id} |
-| POST | /api/Tutores |
-| PUT | /api/Tutores/{id} |
-| DELETE | /api/Tutores/{id} |
+```
+ChallengeAPI/
+├── Controllers/
+├── Data/
+├── Models/
+├── Migrations/
+├── Properties/
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── scripts/
+│   ├── setup-azure.sh
+│   └── delete-azure.sh
+├── Program.cs
+├── appsettings.json
+└── README.md
+```
 
 ---
 
-## Pet
+## 🛣️ Rotas da API
 
-| Método | Endpoint |
-|---|---|
-| GET | /api/Pets |
-| GET | /api/Pets/{id} |
-| GET | /api/Pets/nome/{nome} |
-| POST | /api/Pets |
-| PUT | /api/Pets/{id} |
-| DELETE | /api/Pets/{id} |
+### Tutores
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|--------|
+| `GET` | `/api/Tutores` | Lista todos os tutores | 200 |
+| `GET` | `/api/Tutores/{id}` | Busca tutor por ID | 200 / 404 |
+| `POST` | `/api/Tutores` | Cadastra novo tutor | 201 / 400 |
+| `PUT` | `/api/Tutores/{id}` | Atualiza tutor | 204 / 404 |
+| `DELETE` | `/api/Tutores/{id}` | Remove tutor | 204 / 404 |
+
+### Pets
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|--------|
+| `GET` | `/api/Pets` | Lista todos os pets | 200 |
+| `GET` | `/api/Pets/{id}` | Busca pet por ID | 200 / 404 |
+| `GET` | `/api/Pets/nome/{nome}` | Busca pet por nome | 200 |
+| `POST` | `/api/Pets` | Cadastra novo pet | 201 / 400 |
+| `PUT` | `/api/Pets/{id}` | Atualiza pet | 204 / 404 |
+| `DELETE` | `/api/Pets/{id}` | Remove pet | 204 / 404 |
+
+### Vacinas
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|--------|
+| `GET` | `/api/Vacinas` | Lista todas as vacinas | 200 |
+| `GET` | `/api/Vacinas/{id}` | Busca vacina por ID | 200 / 404 |
+| `GET` | `/api/Vacinas/pet/{petId}` | Vacinas de um pet | 200 |
+| `POST` | `/api/Vacinas` | Registra vacina | 201 / 400 |
+| `PUT` | `/api/Vacinas/{id}` | Atualiza vacina | 204 / 404 |
+| `DELETE` | `/api/Vacinas/{id}` | Remove vacina | 204 / 404 |
+
+### Consultas
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|--------|
+| `GET` | `/api/Consultas` | Lista todas as consultas | 200 |
+| `GET` | `/api/Consultas/{id}` | Busca consulta por ID | 200 / 404 |
+| `GET` | `/api/Consultas/pet/{petId}` | Consultas de um pet | 200 |
+| `GET` | `/api/Consultas/veterinario/{veterinario}` | Consultas por veterinário | 200 |
+| `POST` | `/api/Consultas` | Registra consulta | 201 / 400 |
+| `PUT` | `/api/Consultas/{id}` | Atualiza consulta | 204 / 404 |
+| `DELETE` | `/api/Consultas/{id}` | Remove consulta | 204 / 404 |
 
 ---
 
-## Vacina
+## 🚀 Como Instalar (How To)
 
-| Método | Endpoint |
-|---|---|
-| GET | /api/Vacinas |
-| GET | /api/Vacinas/{id} |
-| GET | /api/Vacinas/pet/{petId} |
-| POST | /api/Vacinas |
-| PUT | /api/Vacinas/{id} |
-| DELETE | /api/Vacinas/{id} |
+### Pré-requisitos
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e rodando
+- [Git](https://git-scm.com/) instalado
+- [Azure CLI](https://learn.microsoft.com/pt-br/cli/azure/install-azure-cli) instalado (para deploy em nuvem)
 
----
-
-## Consulta
-
-| Método | Endpoint |
-|---|---|
-| GET | /api/Consultas |
-| GET | /api/Consultas/{id} |
-| GET | /api/Consultas/pet/{petId} |
-| GET | /api/Consultas/veterinario/{veterinario} |
-| POST | /api/Consultas |
-| PUT | /api/Consultas/{id} |
-| DELETE | /api/Consultas/{id} |
-
----
-
-# Como Executar o Projeto
-
-## 1️. Clonar o repositório
+### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
+cd ChallengeAPI
 ```
 
----
-
-## 2️. Instalar os pacotes
+### 2. Rodar localmente com Docker
 
 ```bash
-dotnet restore
+docker-compose -f docker/docker-compose.yml up -d --build
 ```
 
----
+Aguarde 2-3 minutos para o Oracle inicializar. Acesse:
 
-## 3️. Configurar conexão Oracle
+- **Swagger:** http://localhost:8080/swagger
+- **Scalar:** http://localhost:8080/scalar
+- **API:** http://localhost:8080/api/Pets
 
-No arquivo:
-
-```plaintext
-appsettings.json
-```
-
-Configurar:
-
-```json
-"ConnectionStrings": {
-  "OracleConnection": "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL" //Nesse caso pode usar o meu mesmo
-}
-```
-
----
-
-## 4️. Executar as migrations
+### 3. Verificar se está rodando
 
 ```bash
-dotnet ef database update
+docker-compose -f docker/docker-compose.yml ps
 ```
 
----
-
-## 5️. Executar a aplicação
+### 4. Parar os containers
 
 ```bash
-dotnet run
+docker-compose -f docker/docker-compose.yml down
+```
+
+### 5. Deploy na Azure
+
+```bash
+# Provisionar VM
+bash scripts/setup-azure.sh
+
+# Conectar via SSH
+ssh clyvovet@<IP_DA_VM>
+
+# Dentro da VM — fazer deploy
+git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
+cd ChallengeAPI
+docker-compose -f docker/docker-compose.yml up -d --build
+
+# OBRIGATÓRIO após avaliação — deletar recursos
+bash scripts/delete-azure.sh
 ```
 
 ---
 
-# Documentação
+## 🐳 Dockerfile
 
-## Swagger
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /app
+COPY ChallengeAPI.csproj ./
+RUN dotnet restore
+COPY . ./
+RUN dotnet publish ChallengeAPI.csproj -c Release -o /out --no-restore
 
-```plaintext
-/swagger
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+RUN addgroup --system appgroup && \
+    adduser --system --ingroup appgroup --no-create-home appuser
+COPY --from=build /out .
+RUN chown -R appuser:appgroup /app
+USER appuser
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["dotnet", "ChallengeAPI.dll"]
 ```
 
-## Scalar
+---
 
-```plaintext
-/scalar
+## 🐙 Docker Compose
+
+```yaml
+services:
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: challengeapi-oracle
+    environment:
+      ORACLE_PASSWORD: Oracle123
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      retries: 15
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: challengeapi-app
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__OracleConnection=User Id=system;Password=Oracle123;Data Source=oracle:1521/XEPDB1
+    depends_on:
+      oracle:
+        condition: service_healthy
+
+volumes:
+  oracle_data:
+    name: challengeapi_oracle_data
 ```
 
 ---
 
-# Desenvolvido por
+## ☁️ Script Azure CLI
 
-Eduardo Augusto de Oliveira Souza - RM 565269
-=======
-"# ChallengeAPI" 
-# Challenge Sprint - Clyvo API
+```bash
+# Criar Resource Group
+az group create --name rg-challengeapi --location brazilsouth
 
-## Descrição
-API REST desenvolvida em ASP.NET Core para gerenciamento de pets, tutores e vacinas.
+# Criar VM Linux Ubuntu
+az vm create \
+  --resource-group rg-challengeapi \
+  --name vm-challengeapi \
+  --image Ubuntu2204 \
+  --size Standard_B2s \
+  --admin-username clyvovet \
+  --generate-ssh-keys
 
-Projeto desenvolvido para a Challenge Sprint da FIAP em parceria com a Clyvo.
+# Abrir portas
+az vm open-port --resource-group rg-challengeapi --name vm-challengeapi --port 8080 --priority 1001
+az vm open-port --resource-group rg-challengeapi --name vm-challengeapi --port 1521 --priority 1002
 
----
+# Instalar Docker e ferramentas
+az vm run-command invoke \
+  --resource-group rg-challengeapi \
+  --name vm-challengeapi \
+  --command-id RunShellScript \
+  --scripts "curl -fsSL https://get.docker.com | sh && apt-get install -y git nano"
+```
 
-## Tecnologias Utilizadas
-
-- ASP.NET Core Web API
-- Entity Framework Core
-- Oracle Database
-- Swagger/OpenAPI
-- Scalar
-- GitHub
-
----
-
-## Estrutura do Projeto
-
-- Controllers
-- Models
-- DTOs
-- Data
-- Migrations
+> 📎 Script completo disponível em `scripts/setup-azure.sh`
 
 ---
 
+## 👥 Equipe
 
-## Integrantes
+| Nome | RM |
+|------|----|
+| Eduardo Augusto de Oliveira Souza | RM565269 |
+| Fellipe Costa de Oliveira | RM564673 |
+| Felype Ferreira Maschio | RM563009 |
+| Gustavo Vieira de Matos | RM563304 |
+| Pedro Henrique dos Santos Costa | RM562156 |
 
-- Eduardo Augusto
-- Fellipe Costa
-- Felype Maschio
-- Gustavo Vieira
-- Pedro Henrique
->>>>>>> c5f6306807abef4dd55ab8d65488dd435e773e29
+---
+
+*FIAP 2026 — Turma 2TDS | DevOps Tools & Cloud Computing — Sprint 1*

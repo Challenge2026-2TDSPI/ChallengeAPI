@@ -1,5 +1,4 @@
 services:
-
   oracle:
     image: gvenzl/oracle-xe:21-slim
     container_name: challengeapi-oracle
@@ -14,7 +13,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 15
-      start_period: 60s
+      start_period: 90s
     restart: unless-stopped
 
   api:
@@ -25,8 +24,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__OracleConnection=User Id=system;Password=Oracle123;Data Source=oracle:1521/XEPDB1
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__OracleConnection: "User Id=system;Password=Oracle123;Data Source=oracle:1521/XEPDB1"
     depends_on:
       oracle:
         condition: service_healthy

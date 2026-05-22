@@ -379,7 +379,7 @@ scripts/setup-azure.sh
 ```
 
 ---
-//Lembrando que as portas são únicas, rode o programa normal no Visual Studio e acesse pela sua porta disponível, a parte de docker é comente para cloud computing, mas a parte de .NET está rodando tranquilo, abra a solução no VS, rode e abra o scala ou swagger, porém com sua porta fornecida.
+//Lembrando que as portas são únicas, rode o programa normal no Visual Studio e acesse pela sua porta disponível, a parte de docker é somente para cloud computing, mas a parte de .NET está rodando tranquilo, abra a solução no VS, rode e abra o scala ou swagger, porém com sua porta fornecida.
 
 ## Equipe
 | Eduardo Augusto de Oliveira Souza | RM565269 |

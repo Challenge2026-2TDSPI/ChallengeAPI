@@ -14,6 +14,7 @@ Projeto desenvolvido para o Challenge Sprint 1 da FIAP — Disciplina DevOps Too
 - Docker + Docker Compose
 - Azure Virtual Machine (AlmaLinux 10.1)
 - Swagger / OpenAPI
+- Scalar
 - GitHub
 
 ---
@@ -23,6 +24,7 @@ Controllers/
 Data/
 Models/
 Migrations/
+Properties/
 docker/
 Dockerfile
 docker-compose.yml
@@ -92,6 +94,48 @@ docker-compose.yml
 
 ---
 
+## Como Executar Localmente
+
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
+```
+
+### 2. Instalar os pacotes
+
+```bash
+dotnet restore
+```
+
+### 3. Configurar conexão Oracle
+
+No arquivo `appsettings.json`:
+
+```json
+"ConnectionStrings": {
+  "OracleConnection": "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL"
+}
+```
+
+### 4. Executar as migrations
+
+```bash
+dotnet ef database update
+```
+
+### 5. Executar a aplicação
+
+```bash
+dotnet run
+```
+
+**Documentação disponível em:**
+- Swagger: `/swagger`
+- Scalar: `/scalar`
+
+---
+
 ## Deploy — Azure + Docker
 
 A aplicação está containerizada e rodando em uma VM Linux na Azure.
@@ -108,36 +152,11 @@ docker compose -f docker/docker-compose.yml restart
 ```
 
 **Configurações de deploy:**
-- API disponível em: `http://57.156.58.199/swagger`
 - Porta externa: **80** → porta interna do container: **8080**
 - Oracle XE na porta: **1521**
 - Volume nomeado: `challengeapi_oracle_data`
 - Usuário da aplicação: `appuser` (sem privilégios root)
-
----
-
-## Como executar localmente
-
-```bash
-# 1. Clonar o repositório
-git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
-
-# 2. Restaurar pacotes
-dotnet restore
-
-# 3. Configurar a connection string no appsettings.json
-# "OracleConnection": "User Id=...;Password=...;Data Source=..."
-
-# 4. Executar as migrations
-dotnet ef database update
-
-# 5. Executar a aplicação
-dotnet run
-```
-
-**Documentação disponível em:**
-- Swagger: `/swagger`
-- Scalar: `/scalar`
+- VM: AlmaLinux 10.1 — Standard_D2s_v3 — Chile Central
 
 ---
 

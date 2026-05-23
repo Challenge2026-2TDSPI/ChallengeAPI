@@ -399,6 +399,42 @@ DevOps Tools & Cloud Computing
 
 ---
 
+---
+
+## Deploy — Azure + Docker (DevOps Sprint 1)
+
+A aplicação está containerizada e rodando em uma VM Linux na Azure.
+
+```bash
+# Subir containers em background
+docker compose -f docker/docker-compose.yml up -d --build
+
+# Ver containers rodando
+docker ps
+
+# Reiniciar containers
+docker compose -f docker/docker-compose.yml restart
+```
+
+**Configurações de deploy:**
+- Porta externa: **80** → porta interna do container: **8080**
+- Oracle XE na porta: **1521**
+- Volume nomeado: `challengeapi_oracle_data`
+- Usuário da aplicação: `appuser` (sem privilégios root)
+- VM: AlmaLinux 10.1 — Standard_D2s_v3 — Chile Central
+
+---
+
+## Integrantes
+
+| Nome | RM |
+|---|---|
+| Eduardo Augusto de Oliveira Souza | RM565269 |
+| Fellipe Costa de Oliveira | RM564673 |
+| Felype Ferreira Maschio | RM563009 |
+| Gustavo Vieira de Matos | RM563304 |
+| Pedro Henrique dos Santos Costa | RM562156 |
+
 ## Objetivo Acadêmico
 
 Desenvolver uma API RESTful profissional utilizando ASP.NET Core, Oracle Database, Docker, Azure e documentação OpenAPI seguindo boas práticas de arquitetura e integração cloud-native.

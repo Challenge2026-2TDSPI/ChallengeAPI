@@ -1,9 +1,22 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ChallengeAPI.Data;
 using Scalar.AspNetCore;
 using System.Reflection;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        .MinimumLevel.Information()
+        .WriteTo.Console()
+        .WriteTo.File(
+            path: "logs/log-.txt",
+            rollingInterval: RollingInterval.Day)
+        .Enrich.FromLogContext();
+});
 
 builder.Services.AddControllers();
 
@@ -23,7 +36,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("OracleConnection")
     ));
 
+builder.Services.AddHealthChecks()
+    .AddOracle(
+        connectionString: builder.Configuration.GetConnectionString("OracleConnection"),
+        name: "oracle-database",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "db", "oracle" }
+    );
+
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
 
 app.UseSwagger();
 
@@ -44,5 +67,7 @@ app.MapScalarApiReference(options =>
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHealthChecks("/health");
 
 app.Run();

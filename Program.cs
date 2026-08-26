@@ -4,6 +4,8 @@ using ChallengeAPI.Data;
 using Scalar.AspNetCore;
 using System.Reflection;
 using Serilog;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,22 @@ builder.Host.UseSerilog((context, configuration) =>
             rollingInterval: RollingInterval.Day)
         .Enrich.FromLogContext();
 });
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddSource("ChallengeAPI") // adiciona a fonte de rastreamento para a API (para rastrear eventos personalizados | (mostrando a requisição passando "entre camadas")).
+            .AddAspNetCoreInstrumentation() // gera automaticamente uma trace para cada requisição HTTP recebida (rota, status, duração...)
+            .AddHttpClientInstrumentation() // rastreia chamadas HTTP que a API faz para fora para cada requisição HTTP feita pelo HttpClient
+            .AddConsoleExporter(); // exporta as traces/métricas para o console (sendo mais fácil de visualizar durante o desenvolvimento)
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation() // gera automaticamente uma trace para cada requisição HTTP recebida (rota, status, duração...)
+            .AddConsoleExporter(); // exporta as traces/métricas para o console (sendo mais fácil de visualizar durante o desenvolvimento)
+    });
 
 builder.Services.AddControllers();
 

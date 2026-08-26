@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using ChallengeAPI.Data;
 using ChallengeAPI.Models;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace ChallengeAPI.Controllers;
 
@@ -9,11 +11,15 @@ namespace ChallengeAPI.Controllers;
 [Route("api/[controller]")]
 public class PetsController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private static readonly ActivitySource _activitySource = new("ChallengeAPI");
 
-    public PetsController(AppDbContext context)
+    private readonly AppDbContext _context;
+    private readonly ILogger<PetsController> _logger;
+
+    public PetsController(AppDbContext context, ILogger<PetsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     /// <summary>
@@ -40,16 +46,20 @@ public class PetsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Pet>> GetPetById(int id)
     {
-        var pet = await _context.Pets
-            .Include(p => p.Tutor)
-            .FirstOrDefaultAsync(p => p.Id == id);
+        using var activity = _activitySource.StartActivity("PetsController.GetPetById");
+        activity?.SetTag("pet.id", id);
+
+        var pet = await _context.Pets.FindAsync(id);
 
         if (pet == null)
         {
+            activity?.SetTag("pet.found", false);
+            _logger.LogWarning("Pet com ID {PetId} não encontrado", id);
             return NotFound();
         }
 
-        return Ok(pet);
+        activity?.SetTag("pet.found", true);
+        return pet;
     }
 
     /// <summary>
@@ -121,7 +131,6 @@ public class PetsController : ControllerBase
     /// <param name="nome">Nome do pet.</param>
     /// <response code="200">Pets encontrados.</response>
     /// <response code="404">Nenhum pet encontrado.</response>
-
     [HttpGet("nome/{nome}")]
     public async Task<ActionResult<IEnumerable<Pet>>> GetPetPorNome(string nome)
     {
@@ -196,5 +205,4 @@ public class PetsController : ControllerBase
 
         return NoContent();
     }
-
-}
+} 

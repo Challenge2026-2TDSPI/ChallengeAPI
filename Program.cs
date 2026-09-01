@@ -3,7 +3,12 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ChallengeAPI.Data;
 using Scalar.AspNetCore;
 using System.Reflection;
+using System.Diagnostics;
 using Serilog;
+using Serilog.Context;
+using ChallengeAPI.Telemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +23,29 @@ builder.Host.UseSerilog((context, configuration) =>
         .Enrich.FromLogContext();
 });
 
-builder.Services.AddControllers();
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddSource("ChallengeAPI")
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddConsoleExporter();
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddMeter(AppMetrics.Meter.Name)
+            .AddAspNetCoreInstrumentation()
+            .AddConsoleExporter();
+    });
+
+builder.Services.AddScoped<TelemetryActionFilter>();
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.AddService<TelemetryActionFilter>();
+});
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -46,10 +73,20 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    var activity = Activity.Current;
+
+    using (LogContext.PushProperty("TraceId", activity?.TraceId.ToString()))
+    using (LogContext.PushProperty("SpanId", activity?.SpanId.ToString()))
+    {
+        await next();
+    }
+});
+
 app.UseSerilogRequestLogging();
 
 app.UseSwagger();
-
 app.UseSwaggerUI();
 
 app.MapScalarApiReference(options =>
@@ -62,7 +99,7 @@ app.MapScalarApiReference(options =>
     options.OpenApiRoutePattern = "/swagger/v1/swagger.json";
 });
 
-//app.UseHttpsRedirection(); comentei isso para não ter erro de HTTP para HTTPS, assim ficando fácil usar o swagger e scalar
+// app.UseHttpsRedirection(); Mantido desabilitado para facilitar o uso local com HTTP.
 
 app.UseAuthorization();
 
@@ -71,3 +108,7 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+public partial class Program
+{
+}

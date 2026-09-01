@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ChallengeAPI.Data;
 using ChallengeAPI.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ChallengeAPI.Controllers;
 
@@ -10,10 +11,14 @@ namespace ChallengeAPI.Controllers;
 public class PetsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly ILogger<PetsController> _logger;
 
-    public PetsController(AppDbContext context)
+    public PetsController(
+        AppDbContext context,
+        ILogger<PetsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     /// <summary>
@@ -40,16 +45,18 @@ public class PetsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Pet>> GetPetById(int id)
     {
+
         var pet = await _context.Pets
             .Include(p => p.Tutor)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (pet == null)
         {
+            _logger.LogWarning("Pet com ID {PetId} não encontrado", id);
             return NotFound();
         }
 
-        return Ok(pet);
+        return pet;
     }
 
     /// <summary>

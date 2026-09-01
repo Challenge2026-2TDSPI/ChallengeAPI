@@ -439,3 +439,96 @@ docker compose -f docker/docker-compose.yml restart
 
 Desenvolver uma API RESTful profissional utilizando ASP.NET Core, Oracle Database, Docker, Azure e documentação OpenAPI seguindo boas práticas de arquitetura e integração cloud-native.
 ````
+
+---
+
+## Sprint 3 — .NET: Observabilidade e Testes
+
+### Health Check
+
+A API expõe:
+
+```text
+GET /health
+```
+
+O Health Check verifica a disponibilidade do Oracle Database utilizando `AspNetCore.HealthChecks.Oracle`.
+
+### Logging Estruturado
+
+O Serilog registra as requisições da aplicação em:
+
+- Console
+- Arquivos diários em `logs/log-YYYYMMDD.txt`
+
+O middleware `UseSerilogRequestLogging()` registra método, rota, status e duração das requisições.
+
+### OpenTelemetry
+
+A aplicação utiliza OpenTelemetry para:
+
+- Tracing automático das requisições ASP.NET Core
+- Tracing de chamadas `HttpClient`
+- Spans customizados das ações dos controllers
+- Métricas HTTP
+- Métricas customizadas da aplicação
+
+Métricas customizadas:
+
+```text
+challengeapi.requests
+challengeapi.request.duration
+```
+
+Os dados são exportados para o console durante a execução local, facilitando a demonstração da observabilidade.
+
+### Testes Automatizados
+
+Os testes estão separados em dois projetos:
+
+```text
+ChallengeAPI.UnitTests/
+ChallengeAPI.IntegrationTests/
+```
+
+#### Testes unitários
+
+Utilizam:
+
+- xUnit
+- Moq
+- EF Core InMemory
+- padrão AAA (Arrange, Act, Assert)
+
+Os testes isolam os controllers do Oracle utilizando um banco InMemory.
+
+#### Testes de integração
+
+Utilizam:
+
+- xUnit
+- `WebApplicationFactory`
+- `ICollectionFixture`
+- EF Core InMemory
+
+Os testes sobem a API em memória e realizam requisições HTTP reais contra os endpoints.
+
+### Executar os testes
+
+Na raiz da solução:
+
+```bash
+dotnet restore
+dotnet build
+dotnet test
+```
+
+No Visual Studio, também é possível executar todos os testes pelo **Test Explorer**.
+
+### Projetos da solução
+
+```text
+ChallengeAPI
+ChallengeAPI.UnitTests
+ChallengeAPI.IntegrationTests
+```

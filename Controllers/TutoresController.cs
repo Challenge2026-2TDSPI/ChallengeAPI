@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ChallengeAPI.Data;
 using ChallengeAPI.Models;
@@ -41,7 +41,7 @@ public class TutoresController : ControllerBase
 
         if (tutor == null)
         {
-            return NotFound(404);
+            return NotFound();
         }
 
         return Ok(tutor);

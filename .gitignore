@@ -3,5 +3,8 @@
 bin/
 obj/
 logs/
+publish/
+deploy.zip
+.env
 
 TestResults/

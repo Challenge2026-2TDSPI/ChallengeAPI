@@ -1,6 +1,14 @@
-@ChallengeAPI_HostAddress = http://localhost:5241
+@ChallengeAPI_HostAddress = https://clyvovet-api-563304.azurewebsites.net
 
-GET {{ChallengeAPI_HostAddress}}/weatherforecast/
+GET {{ChallengeAPI_HostAddress}}/health
 Accept: application/json
 
 ###
+
+GET {{ChallengeAPI_HostAddress}}/api/Tutores
+Accept: application/json
+
+###
+
+GET {{ChallengeAPI_HostAddress}}/api/Pets
+Accept: application/json

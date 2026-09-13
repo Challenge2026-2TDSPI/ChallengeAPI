@@ -17,10 +17,14 @@ builder.Host.UseSerilog((context, configuration) =>
     configuration
         .MinimumLevel.Information()
         .WriteTo.Console()
-        .WriteTo.File(
-            path: "logs/log-.txt",
-            rollingInterval: RollingInterval.Day)
         .Enrich.FromLogContext();
+
+    if (context.HostingEnvironment.IsDevelopment())
+    {
+        configuration.WriteTo.File(
+            path: "logs/log-.txt",
+            rollingInterval: RollingInterval.Day);
+    }
 });
 
 builder.Services.AddOpenTelemetry()
@@ -58,17 +62,21 @@ builder.Services.AddSwaggerGen(options =>
     );
 });
 
+var sqlServerConnection = builder.Configuration.GetConnectionString("SqlServerConnection")
+    ?? throw new InvalidOperationException(
+        "A connection string 'SqlServerConnection' nao foi configurada.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseOracle(
-        builder.Configuration.GetConnectionString("OracleConnection")
-    ));
+    options.UseSqlServer(
+        sqlServerConnection,
+        sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
 builder.Services.AddHealthChecks()
-    .AddOracle(
-        connectionString: builder.Configuration.GetConnectionString("OracleConnection"),
-        name: "oracle-database",
+    .AddSqlServer(
+        connectionString: sqlServerConnection,
+        name: "azure-sql-database",
         failureStatus: HealthStatus.Unhealthy,
-        tags: new[] { "db", "oracle" }
+        tags: new[] { "db", "sqlserver", "azure-sql" }
     );
 
 var app = builder.Build();
@@ -99,7 +107,7 @@ app.MapScalarApiReference(options =>
     options.OpenApiRoutePattern = "/swagger/v1/swagger.json";
 });
 
-// app.UseHttpsRedirection(); Mantido desabilitado para facilitar o uso local com HTTP.
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

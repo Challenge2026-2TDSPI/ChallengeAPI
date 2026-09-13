@@ -1,429 +1,254 @@
-# CLYVO VET — ChallengeAPI
+# CLYVO VET - ChallengeAPI
 
-> API RESTful para gestão da jornada contínua de saúde do pet.
+API REST para a gestao da jornada continua de saude dos pets, publicada como
+codigo no Azure App Service e integrada a um Azure SQL Database PaaS.
 
----
+> Entrega escolhida: Servico de Aplicativo (App Service). A aplicacao utiliza o
+> runtime nativo .NET 8 do App Service e o banco e um servico PaaS.
 
-## Índice
+## Descricao da solucao
 
-- [Descrição do Projeto](#descrição-do-projeto)
-- [Benefícios para o Negócio](#benefícios-para-o-negócio)
-- [Arquitetura Macro](#arquitetura-macro)
-- [Relacionamentos da Aplicação](#relacionamentos-da-aplicação)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Rotas da API](#rotas-da-api)
-- [Como Instalar (How To)](#como-instalar-how-to)
-- [Documentação OpenAPI](#documentação-openapi)
-- [Dockerfile](#dockerfile)
-- [Docker Compose](#docker-compose)
-- [Script Azure CLI](#script-azure-cli)
-- [Equipe](#equipe)
-- [Disciplina](#disciplina)
+A CLYVO VET centraliza tutores, pets, vacinas e consultas veterinarias. A API
+permite incluir, consultar, alterar e excluir registros, mantendo os dados de
+saude relacionados ao pet e ao seu responsavel.
 
----
+## Beneficios para o negocio
 
-## Descrição do Projeto
+| Beneficio | Impacto |
+|---|---|
+| Historico longitudinal | Clinicas consultam a jornada do pet em um unico lugar |
+| Cuidado preventivo | Vacinas e consultas registradas ajudam a reduzir atrasos |
+| Maior recorrencia | Acompanhamentos programados aumentam o retorno a clinica |
+| Decisao clinica | O historico estruturado apoia atendimentos mais completos |
+| Disponibilidade em nuvem | A API e o banco podem ser acessados sem infraestrutura local |
 
-A CLYVO VET API é uma solução REST desenvolvida em .NET 8 com Oracle Database, criada para resolver a descontinuidade no cuidado preventivo de pets no Brasil.
+## Arquitetura Azure
 
-O sistema permite gerenciar o histórico completo de saúde dos animais — tutores, pets, vacinas e consultas veterinárias — de forma contínua e estruturada, transformando a experiência reativa (apenas emergências) em um modelo preventivo e proativo.
+![Arquitetura App Service e Azure SQL](docs/arquitetura-app-service.png)
 
----
+Todos os recursos ficam no mesmo Resource Group e sao criados por Azure CLI:
 
-## Benefícios para o Negócio
+- App Service Plan Linux;
+- Azure App Service com runtime nativo .NET 8;
+- Azure SQL logical server;
+- Azure SQL Database;
+- regras de firewall e configuracao segura da connection string.
 
-| Benefício | Impacto |
-| Histórico longitudinal estruturado | Clínicas acessam todo o histórico do pet em um lugar |
-| Aumento de recorrência | Vacinas e consultas registradas reduzem abandono de tratamentos |
-| Maior LTV por pet | Acompanhamento preventivo gera mais visitas planejadas |
-| Redução de emergências evitáveis | Protocolo preventivo diminui agravamentos desnecessários |
-| Dados para decisão clínica | Histórico estruturado apoia diagnósticos mais precisos |
+O cliente acessa a API por HTTPS. O App Service le a connection string das
+configuracoes protegidas do proprio servico e se comunica com o Azure SQL.
 
----
+## Modelo de dados
 
-## Arquitetura Macro
-
-```plaintext
-┌──────────────┐    HTTP :8080   ┌──────────────────────────────────────┐
-│   Usuário    │ ──────────────► │        Azure VM Linux Ubuntu         │
-│ (Postman /   │                 │  ┌───────────────┐  ┌─────────────┐  │
-│  Swagger /   │ ◄────────────── │  │  Container    │  │  Container  │  │
-│  Scalar)     │    JSON         │  │  API .NET 8   │◄►│  Oracle XE  │  │
-└──────────────┘                 │  │  porta 8080   │  │  porta 1521 │  │
-                                 │  └───────────────┘  └─────────────┘  │
-                                 │           └── Volume nomeado ─────────┘
-                                 └──────────────────────────────────────┘
+```mermaid
+erDiagram
+    TUTORES ||--o{ PETS : possui
+    PETS ||--o{ VACINAS : recebe
+    PETS ||--o{ CONSULTAS : realiza
 ```
 
----
+As tabelas `Tutores`, `Pets`, `Vacinas` e `Consultas` representam o core da
+solucao. O arquivo [`scripts/script_bd.sql`](scripts/script_bd.sql) contem o DDL
+comentado, chaves primarias, chaves estrangeiras, indices e cinco registros
+significativos por tabela.
 
-## Relacionamentos da Aplicação
+## Tecnologias
 
-```plaintext
-Tutor
- └── Pets
-      ├── Vacinas
-      └── Consultas
-```
+- ASP.NET Core 8;
+- Entity Framework Core 8 com provider SQL Server;
+- Azure App Service Linux;
+- Azure SQL Database;
+- Azure CLI;
+- Swagger/OpenAPI e Scalar;
+- Serilog e OpenTelemetry;
+- xUnit, Moq e EF Core InMemory.
 
-### Relações implementadas
+## Estrutura do repositorio
 
-- Um Tutor pode possuir vários Pets
-- Um Pet pertence a um Tutor
-- Um Pet pode possuir várias Vacinas
-- Um Pet pode possuir várias Consultas
-
-As relações foram implementadas utilizando Entity Framework Core com Foreign Keys e Oracle Database.
-
----
-
-## Tecnologias Utilizadas
-
-- ASP.NET Core 8.0
-- Entity Framework Core
-- Oracle Database (containerizado)
-- Oracle Entity Framework Core Provider
-- RESTful API
-- XML Documentation
-- Swagger / OpenAPI
-- Scalar
-- Docker + Docker Compose
-- Microsoft Azure (VM Linux)
-- Azure CLI
-- Git / GitHub
-
----
-
-## Estrutura do Projeto
-
-```plaintext
+```text
 ChallengeAPI/
-├── Controllers/
-├── Data/
-├── Models/
-├── Migrations/
-├── Properties/
-├── docker/
-│   ├── Dockerfile
-│   └── docker-compose.yml
-├── scripts/
-│   ├── setup-azure.sh
-│   └── delete-azure.sh
-├── Program.cs
-├── appsettings.json
-└── README.md
+|-- Controllers/                 endpoints REST
+|-- Data/                        DbContext do Entity Framework
+|-- Models/                      entidades do dominio
+|-- Telemetry/                   metricas e tracing
+|-- ChallengeAPI.UnitTests/      testes unitarios
+|-- ChallengeAPI.IntegrationTests/
+|-- docs/
+|   |-- arquitetura-app-service.png
+|   |-- arquitetura-app-service.svg
+|   `-- roteiro-video.md
+|-- scripts/
+|   |-- 00_config.sh
+|   |-- 01_create-resource-group.sh
+|   |-- 02_create-app-service.sh
+|   |-- 03_create-azure-sql.sh
+|   |-- 04_initialize-database.sh
+|   |-- 05_deploy-app-service.sh
+|   |-- 06_test-crud.sh
+|   |-- 99_delete-azure.sh
+|   `-- script_bd.sql
+|-- ChallengeAPI.csproj
+|-- ChallengeAPI.sln
+|-- Program.cs
+`-- README.md
 ```
 
----
+## Rotas principais
 
-## Rotas da API
+| Recurso | GET | POST | PUT | DELETE |
+|---|---|---|---|---|
+| Tutores | `/api/Tutores` | `/api/Tutores` | `/api/Tutores/{id}` | `/api/Tutores/{id}` |
+| Pets | `/api/Pets` | `/api/Pets` | `/api/Pets/{id}` | `/api/Pets/{id}` |
+| Vacinas | `/api/Vacinas` | `/api/Vacinas` | `/api/Vacinas/{id}` | `/api/Vacinas/{id}` |
+| Consultas | `/api/Consulta` | `/api/Consulta` | `/api/Consulta/{id}` | `/api/Consulta/{id}` |
 
-### Tutores
+Outras rotas de pesquisa ficam documentadas no Swagger.
 
-| Método | Endpoint | Descrição | Status |
-| `GET` | `/api/Tutores` | Lista todos os tutores | 200 |
-| `GET` | `/api/Tutores/{id}` | Busca tutor por ID | 200 / 404 |
-| `POST` | `/api/Tutores` | Cadastra novo tutor | 201 / 400 |
-| `PUT` | `/api/Tutores/{id}` | Atualiza tutor | 204 / 404 |
-| `DELETE` | `/api/Tutores/{id}` | Remove tutor | 204 / 404 |
+## How To - deploy completo
 
----
+Os passos abaixo devem ser seguidos nesta mesma ordem durante a gravacao. Eles
+podem ser executados no Azure Cloud Shell (Bash) ou em um terminal Bash com as
+ferramentas instaladas.
 
-### Pets
+### 1. Pre-requisitos
 
-| Método | Endpoint | Descrição | Status |
-| `GET` | `/api/Pets` | Lista todos os pets | 200 |
-| `GET` | `/api/Pets/{id}` | Busca pet por ID | 200 / 404 |
-| `GET` | `/api/Pets/nome/{nome}` | Busca pet por nome | 200 |
-| `POST` | `/api/Pets` | Cadastra novo pet | 201 / 400 |
-| `PUT` | `/api/Pets/{id}` | Atualiza pet | 204 / 404 |
-| `DELETE` | `/api/Pets/{id}` | Remove pet | 204 / 404 |
+- assinatura Azure ativa;
+- Git e Azure CLI;
+- .NET SDK 8;
+- `zip`, `curl` e `jq`;
+- `sqlcmd`.
 
----
+O `sqlcmd` esta disponivel por padrao no Azure Cloud Shell. Documentacao:
+[instalar e usar sqlcmd](https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-download-install).
 
-### Vacinas
-
-| Método | Endpoint | Descrição | Status |
-| `GET` | `/api/Vacinas` | Lista todas as vacinas | 200 |
-| `GET` | `/api/Vacinas/{id}` | Busca vacina por ID | 200 / 404 |
-| `GET` | `/api/Vacinas/pet/{petId}` | Vacinas de um pet | 200 |
-| `POST` | `/api/Vacinas` | Registra vacina | 201 / 400 |
-| `PUT` | `/api/Vacinas/{id}` | Atualiza vacina | 204 / 404 |
-| `DELETE` | `/api/Vacinas/{id}` | Remove vacina | 204 / 404 |
-
----
-
-### Consultas
-
-| Método | Endpoint | Descrição | Status |
-| `GET` | `/api/Consultas` | Lista todas as consultas | 200 |
-| `GET` | `/api/Consultas/{id}` | Busca consulta por ID | 200 / 404 |
-| `GET` | `/api/Consultas/pet/{petId}` | Consultas de um pet | 200 |
-| `GET` | `/api/Consultas/veterinario/{veterinario}` | Consultas por veterinário | 200 |
-| `POST` | `/api/Consultas` | Registra consulta | 201 / 400 |
-| `PUT` | `/api/Consultas/{id}` | Atualiza consulta | 204 / 404 |
-| `DELETE` | `/api/Consultas/{id}` | Remove consulta | 204 / 404 |
-
----
-
-## Como Instalar (How To)
-
-### Pré-requisitos
-
-- Docker Desktop instalado e rodando
-- Git instalado
-- Azure CLI instalado (para deploy em nuvem)
-
----
-
-### 1. Clonar o repositório
+### 2. Comecar pelo clone do GitHub
 
 ```bash
 git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
 cd ChallengeAPI
+chmod +x scripts/*.sh
+az login
 ```
 
----
+No Cloud Shell, o login ja costuma estar associado a conta selecionada.
 
-### 2. Rodar localmente com Docker
+### 3. Conferir os nomes dos recursos
+
+O RM do representante ja esta configurado como `rm563304`. Para usar outro RM
+ou uma regiao permitida pela assinatura, exporte antes de executar os scripts:
 
 ```bash
-docker-compose -f docker/docker-compose.yml up -d --build
+export RM=rm563304
+export LOCATION=eastus
+source scripts/00_config.sh
+print_configuration
 ```
 
-Aguarde alguns minutos para o Oracle inicializar.
+Os nomes globais do App Service e do SQL Server usam o numero do RM como sufixo.
 
-Acesse:
-
-- Swagger: http://localhost:8080/swagger
-- Scalar: http://localhost:8080/scalar
-- API: http://localhost:8080/api/Pets
-
----
-
-### 3. Verificar containers
+### 4. Criar o Resource Group
 
 ```bash
-docker-compose -f docker/docker-compose.yml ps
+./scripts/01_create-resource-group.sh
 ```
 
----
-
-### 4. Parar containers
+### 5. Criar o App Service
 
 ```bash
-docker-compose -f docker/docker-compose.yml down
+./scripts/02_create-app-service.sh
 ```
 
----
+Esse script cria o App Service Plan Linux e o Web App com `DOTNETCORE:8.0`.
 
-### 5. Deploy na Azure
+### 6. Criar o Azure SQL e configurar a integracao
+
+Defina uma senha forte apenas na sessao atual. Ela nao sera escrita no
+repositorio nem no `appsettings.json`:
 
 ```bash
-bash scripts/setup-azure.sh
-
-ssh clyvovet@<IP_DA_VM>
-
-git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
-cd ChallengeAPI
-
-docker-compose -f docker/docker-compose.yml up -d --build
-
-bash scripts/delete-azure.sh
+read -r -s -p "Senha forte do Azure SQL: " SQL_ADMIN_PASSWORD
+echo
+export SQL_ADMIN_PASSWORD
+./scripts/03_create-azure-sql.sh
 ```
 
----
+O script cria o servidor e o banco PaaS, configura as regras de rede e grava a
+connection string nas configuracoes protegidas do App Service.
 
-## Documentação OpenAPI
-
-A API possui documentação automática via Swagger e Scalar.
-
-### Swagger UI
-
-```plaintext
-http://localhost:8080/swagger
-```
-
-### Scalar
-
-```plaintext
-http://localhost:8080/scalar
-```
-
-Todos os endpoints possuem:
-
-- Descrição
-- Responses HTTP
-- Parâmetros documentados
-- Modelos de requisição
-- Estrutura OpenAPI
-
----
-
-## Dockerfile
-
-```dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
-
-COPY ChallengeAPI.csproj ./
-RUN dotnet restore
-
-COPY . ./
-RUN dotnet publish ChallengeAPI.csproj -c Release -o /out --no-restore
-
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-WORKDIR /app
-
-RUN addgroup --system appgroup && \
-    adduser --system --ingroup appgroup --no-create-home appuser
-
-COPY --from=build /out .
-
-RUN chown -R appuser:appgroup /app
-
-USER appuser
-
-EXPOSE 8080
-
-ENV ASPNETCORE_URLS=http://+:8080
-
-ENTRYPOINT ["dotnet", "ChallengeAPI.dll"]
-```
-
----
-
-## Docker Compose
-
-```yaml
-services:
-  oracle:
-    image: gvenzl/oracle-xe:21-slim
-    container_name: challengeapi-oracle
-
-    environment:
-      ORACLE_PASSWORD: Oracle123
-
-    ports:
-      - "1521:1521"
-
-    volumes:
-      - oracle_data:/opt/oracle/oradata
-
-    healthcheck:
-      test: ["CMD", "healthcheck.sh"]
-      interval: 30s
-      retries: 15
-
-  api:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-
-    container_name: challengeapi-app
-
-    ports:
-      - "8080:8080"
-
-    environment:
-      - ConnectionStrings__OracleConnection=User Id=system;Password=Oracle123;Data Source=oracle:1521/XEPDB1
-
-    depends_on:
-      oracle:
-        condition: service_healthy
-
-volumes:
-  oracle_data:
-    name: challengeapi_oracle_data
-```
-
----
-
-## Script Azure CLI
+### 7. Criar as tabelas e os dados iniciais
 
 ```bash
-az group create --name rg-challengeapi --location brazilsouth
-
-az vm create \
-  --resource-group rg-challengeapi \
-  --name vm-challengeapi \
-  --image Ubuntu2204 \
-  --size Standard_B2s \
-  --admin-username clyvovet \
-  --generate-ssh-keys
-
-az vm open-port \
-  --resource-group rg-challengeapi \
-  --name vm-challengeapi \
-  --port 8080 \
-  --priority 1001
-
-az vm open-port \
-  --resource-group rg-challengeapi \
-  --name vm-challengeapi \
-  --port 1521 \
-  --priority 1002
-
-az vm run-command invoke \
-  --resource-group rg-challengeapi \
-  --name vm-challengeapi \
-  --command-id RunShellScript \
-  --scripts "curl -fsSL https://get.docker.com | sh && apt-get install -y git nano"
+./scripts/04_initialize-database.sh
 ```
 
-Script completo disponível em:
+Ao final devem aparecer cinco registros em cada uma das quatro tabelas.
 
-```plaintext
-scripts/setup-azure.sh
-```
-
----
-//Lembrando que as portas são únicas, rode o programa normal no Visual Studio e acesse pela sua porta disponível, a parte de docker é somente para cloud computing, mas a parte de .NET está rodando tranquilo, abra a solução no VS, rode e abra o scala ou swagger, porém com sua porta fornecida.
-
-## Equipe
-| Eduardo Augusto de Oliveira Souza | RM565269 |
-| Fellipe Costa de Oliveira | RM564673 |
-| Felype Ferreira Maschio | RM563009 |
-| Gustavo Vieira de Matos | RM563304 |
-| Pedro Henrique dos Santos Costa | RM562156 |
-
----
-
-## Disciplina
-
-FIAP — 2TDS  
-Challenge Sprint 2026  
-DevOps Tools & Cloud Computing
-.NET
-
----
-
----
-
-## Deploy — Azure + Docker (DevOps Sprint 1)
-
-A aplicação está containerizada e rodando em uma VM Linux na Azure.
+### 8. Testar, publicar e implantar a API
 
 ```bash
-# Subir containers em background
-docker compose -f docker/docker-compose.yml up -d --build
-
-# Ver containers rodando
-docker ps
-
-# Reiniciar containers
-docker compose -f docker/docker-compose.yml restart
+./scripts/05_deploy-app-service.sh
 ```
 
-**Configurações de deploy:**
-- Porta externa: **80** → porta interna do container: **8080**
-- Oracle XE na porta: **1521**
-- Volume nomeado: `challengeapi_oracle_data`
-- Usuário da aplicação: `appuser` (sem privilégios root)
-- VM: AlmaLinux 10.1 — Standard_D2s_v3 — Chile Central
+O script executa `dotnet restore`, `dotnet test` e `dotnet publish`, gera um ZIP
+com os binarios publicados e usa `az webapp deploy`. O pacote nao deve conter
+uma pasta superior: os arquivos publicados ficam diretamente na raiz do ZIP,
+como exige o ZIP deploy do App Service.
 
----
+Ao concluir:
+
+```text
+https://clyvovet-api-563304.azurewebsites.net/swagger
+https://clyvovet-api-563304.azurewebsites.net/scalar
+https://clyvovet-api-563304.azurewebsites.net/health
+```
+
+### 9. Demonstrar o CRUD e a persistencia
+
+Execute sem cortes:
+
+```bash
+./scripts/06_test-crud.sh
+```
+
+O script demonstra, individualmente, em duas tabelas relacionadas:
+
+1. `INSERT` de Tutor pela API e `SELECT` direto no banco;
+2. `INSERT` de Pet relacionado e `SELECT` direto no banco;
+3. `UPDATE` de Tutor e de Pet, cada um seguido de `SELECT`;
+4. `GET` dos dois registros pela API;
+5. `DELETE` de Pet e Tutor, cada um seguido de `SELECT` sem linhas.
+
+Tambem e possivel acompanhar os dados pelo Query Editor do Azure SQL no portal.
+
+### 10. Consultar logs, se necessario
+
+```bash
+source scripts/00_config.sh
+az webapp log tail --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
+```
+
+### 11. Remover os recursos depois da avaliacao
+
+O Azure SQL pode gerar custo enquanto permanecer ativo. Remova o Resource Group
+somente depois de concluir o video e confirmar que o professor nao precisa do
+ambiente em execucao:
+
+```bash
+./scripts/99_delete-azure.sh
+```
+
+## Seguranca
+
+- nenhuma senha, token ou connection string real esta versionada;
+- a senha e digitada de forma oculta e permanece somente na sessao;
+- a connection string de producao e armazenada nas configuracoes do App Service;
+- o trafego entre a API e o Azure SQL utiliza criptografia;
+- `appsettings.json` contem apenas uma configuracao local sem credenciais.
+
+## Evidencias exigidas no video
+
+O roteiro completo esta em [`docs/roteiro-video.md`](docs/roteiro-video.md). Nao
+realize cortes durante os testes da API nem entre uma operacao e o respectivo
+`SELECT` no banco.
 
 ## Integrantes
 
@@ -435,100 +260,13 @@ docker compose -f docker/docker-compose.yml restart
 | Gustavo Vieira de Matos | RM563304 |
 | Pedro Henrique dos Santos Costa | RM562156 |
 
-## Objetivo Acadêmico
+## Disciplina
 
-Desenvolver uma API RESTful profissional utilizando ASP.NET Core, Oracle Database, Docker, Azure e documentação OpenAPI seguindo boas práticas de arquitetura e integração cloud-native.
-````
+DevOps Tools & Cloud Computing - Sprint 3 - 2TDS - 2o semestre de 2026.
 
----
+## Referencias tecnicas
 
-## Sprint 3 — .NET: Observabilidade e Testes
-
-### Health Check
-
-A API expõe:
-
-```text
-GET /health
-```
-
-O Health Check verifica a disponibilidade do Oracle Database utilizando `AspNetCore.HealthChecks.Oracle`.
-
-### Logging Estruturado
-
-O Serilog registra as requisições da aplicação em:
-
-- Console
-- Arquivos diários em `logs/log-YYYYMMDD.txt`
-
-O middleware `UseSerilogRequestLogging()` registra método, rota, status e duração das requisições.
-
-### OpenTelemetry
-
-A aplicação utiliza OpenTelemetry para:
-
-- Tracing automático das requisições ASP.NET Core
-- Tracing de chamadas `HttpClient`
-- Spans customizados das ações dos controllers
-- Métricas HTTP
-- Métricas customizadas da aplicação
-
-Métricas customizadas:
-
-```text
-challengeapi.requests
-challengeapi.request.duration
-```
-
-Os dados são exportados para o console durante a execução local, facilitando a demonstração da observabilidade.
-
-### Testes Automatizados
-
-Os testes estão separados em dois projetos:
-
-```text
-ChallengeAPI.UnitTests/
-ChallengeAPI.IntegrationTests/
-```
-
-#### Testes unitários
-
-Utilizam:
-
-- xUnit
-- Moq
-- EF Core InMemory
-- padrão AAA (Arrange, Act, Assert)
-
-Os testes isolam os controllers do Oracle utilizando um banco InMemory.
-
-#### Testes de integração
-
-Utilizam:
-
-- xUnit
-- `WebApplicationFactory`
-- `ICollectionFixture`
-- EF Core InMemory
-
-Os testes sobem a API em memória e realizam requisições HTTP reais contra os endpoints.
-
-### Executar os testes
-
-Na raiz da solução:
-
-```bash
-dotnet restore
-dotnet build
-dotnet test
-```
-
-No Visual Studio, também é possível executar todos os testes pelo **Test Explorer**.
-
-### Projetos da solução
-
-```text
-ChallengeAPI
-ChallengeAPI.UnitTests
-ChallengeAPI.IntegrationTests
-```
+- [Deploy de arquivos no Azure App Service](https://learn.microsoft.com/azure/app-service/deploy-zip)
+- [Quickstart do ASP.NET Core no App Service](https://learn.microsoft.com/azure/app-service/quickstart-dotnetcore)
+- [Azure CLI para App Service](https://learn.microsoft.com/cli/azure/webapp)
+- [Azure CLI para Azure SQL](https://learn.microsoft.com/cli/azure/sql)

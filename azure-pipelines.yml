@@ -1,0 +1,53 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+- stage: Build
+  displayName: 'Build, Test e Publish'
+  jobs:
+  - job: BuildAndTest
+    displayName: 'Build e Test'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Instalar .NET 8 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '8.0.x'
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet restore'
+      inputs:
+        command: 'restore'
+        projects: 'ChallengeAPI.sln'
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet build'
+      inputs:
+        command: 'build'
+        projects: 'ChallengeAPI.sln'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test (Unit Tests)'
+      inputs:
+        command: 'test'
+        projects: 'ChallengeAPI.UnitTests/ChallengeAPI.UnitTests.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --logger trx'
+        publishTestResults: true
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet publish'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'ChallengeAPI.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publicar artefato'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'

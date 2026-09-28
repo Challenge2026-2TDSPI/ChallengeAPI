@@ -1,272 +1,74 @@
-# CLYVO VET - ChallengeAPI
+# CLYVO VET — ChallengeAPI
 
-API REST para a gestao da jornada continua de saude dos pets, publicada como
-codigo no Azure App Service e integrada a um Azure SQL Database PaaS.
+API REST para gestão de saúde de pets. Centraliza tutores, pets, vacinas e consultas veterinárias em um único lugar, permitindo criar, consultar, atualizar e excluir registros e manter o histórico de saúde de cada animal ao longo do tempo.
 
-> Entrega escolhida: Servico de Aplicativo (App Service). A aplicacao utiliza o
-> runtime nativo .NET 8 do App Service e o banco e um servico PaaS.
+## O que a aplicação faz
 
-## Descricao da solucao
+- Cadastro de **tutores** (responsáveis pelos pets).
+- Cadastro de **pets**, vinculados a um tutor.
+- Registro de **vacinas** aplicadas, com data de aplicação e próxima dose.
+- Registro de **consultas** veterinárias.
+- CRUD completo (criar, listar, atualizar, excluir) exposto via API REST documentada em Swagger/OpenAPI.
 
-A CLYVO VET centraliza tutores, pets, vacinas e consultas veterinarias. A API
-permite incluir, consultar, alterar e excluir registros, mantendo os dados de
-saude relacionados ao pet e ao seu responsavel.
+## Stack de tecnologias
 
-## Beneficios para o negocio
-
-| Beneficio | Impacto |
+| Camada | Tecnologia |
 |---|---|
-| Historico longitudinal | Clinicas consultam a jornada do pet em um unico lugar |
-| Cuidado preventivo | Vacinas e consultas registradas ajudam a reduzir atrasos |
-| Maior recorrencia | Acompanhamentos programados aumentam o retorno a clinica |
-| Decisao clinica | O historico estruturado apoia atendimentos mais completos |
-| Disponibilidade em nuvem | A API e o banco podem ser acessados sem infraestrutura local |
+| API | ASP.NET Core 8 (.NET 8) |
+| Acesso a dados | Entity Framework Core 8 |
+| Banco de dados | Azure SQL Database (PaaS) |
+| Hospedagem | Azure App Service (Linux) |
+| CI/CD | Azure DevOps Pipelines (YAML) |
+| Execução da pipeline | Agente self-hosted (Azure Pipelines Agent) |
+| Documentação da API | Swagger / OpenAPI |
+| Observabilidade | Serilog + OpenTelemetry |
+| Testes | xUnit + Moq |
 
-## Arquitetura Azure
+## CI/CD — Sprint 4 (Azure DevOps)
 
-![Arquitetura App Service e Azure SQL](docs/arquitetura-app-service.png)
+O deploy desta aplicação é feito por uma pipeline no Azure DevOps, definida em [`azure-pipelines.yml`](./azure-pipelines.yml), disparada automaticamente a cada push na branch `master`.
 
-Todos os recursos ficam no mesmo Resource Group e sao criados por Azure CLI:
+**Estágio de CI — Build, Test e Publish**
+1. Instala o SDK .NET 8 no agente.
+2. Restaura as dependências (`dotnet restore`).
+3. Compila a solução (`dotnet build`).
+4. Executa os testes automatizados do projeto `ChallengeAPI.UnitTests` (`dotnet test`).
+5. Publica o build e empacota o artefato (`dotnet publish` + `PublishBuildArtifacts@1`).
 
-- App Service Plan Linux;
-- Azure App Service com runtime nativo .NET 8;
-- Azure SQL logical server;
-- Azure SQL Database;
-- regras de firewall e configuracao segura da connection string.
+**Estágio de CD — Deploy**
 
-O cliente acessa a API por HTTPS. O App Service le a connection string das
-configuracoes protegidas do proprio servico e se comunica com o Azure SQL.
+Disparado automaticamente assim que o artefato do estágio anterior é gerado com sucesso: baixa o artefato publicado e faz o deploy direto no Azure App Service (`AzureWebApp@1`), sem intervenção manual.
 
-## Modelo de dados
+A pipeline roda em um **agente self-hosted** (pool `Default`), o que evita depender da cota gratuita de *parallel jobs* Microsoft-hosted do Azure DevOps.
 
-```mermaid
-erDiagram
-    TUTORES ||--o{ PETS : possui
-    PETS ||--o{ VACINAS : recebe
-    PETS ||--o{ CONSULTAS : realiza
-```
+Nenhuma credencial, senha ou connection string fica em texto puro no repositório ou no YAML da pipeline — o acesso ao Azure é feito através de uma Service Connection configurada no próprio Azure DevOps.
 
-As tabelas `Tutores`, `Pets`, `Vacinas` e `Consultas` representam o core da
-solucao. O arquivo [`scripts/script_bd.sql`](scripts/script_bd.sql) contem o DDL
-comentado, chaves primarias, chaves estrangeiras, indices e cinco registros
-significativos por tabela.
+### Arquitetura e fluxo de CI/CD
 
-## Tecnologias
+![Diagrama de arquitetura e fluxo de CI/CD](./docs/architecture-diagram.png)
 
-- ASP.NET Core 8;
-- Entity Framework Core 8 com provider SQL Server;
-- Azure App Service Linux;
-- Azure SQL Database;
-- Azure CLI;
-- Swagger/OpenAPI e Scalar;
-- Serilog e OpenTelemetry;
-- xUnit, Moq e EF Core InMemory.
+O fluxo numerado acima cobre desde o push no GitHub até a API respondendo em produção com o banco de dados conectado (detalhe passo a passo na imagem).
 
-## Estrutura do repositorio
+## Banco de dados
 
-```text
-ChallengeAPI/
-|-- Controllers/                 endpoints REST
-|-- Data/                        DbContext do Entity Framework
-|-- Models/                      entidades do dominio
-|-- Telemetry/                   metricas e tracing
-|-- ChallengeAPI.UnitTests/      testes unitarios
-|-- ChallengeAPI.IntegrationTests/
-|-- docs/
-|   |-- arquitetura-app-service.png
-|   |-- arquitetura-app-service.svg
-|   `-- roteiro-video.md
-|-- scripts/
-|   |-- 00_config.sh
-|   |-- 01_create-resource-group.sh
-|   |-- 02_create-app-service.sh
-|   |-- 03_create-azure-sql.sh
-|   |-- 04_initialize-database.sh
-|   |-- 05_deploy-app-service.sh
-|   |-- 06_test-crud.sh
-|   |-- 99_delete-azure.sh
-|   `-- script_bd.sql
-|-- ChallengeAPI.csproj
-|-- ChallengeAPI.sln
-|-- Program.cs
-`-- README.md
-```
+Azure SQL Database (serviço PaaS), banco `ClyvoVetDb`, com as tabelas `Tutores`, `Pets`, `Vacinas` e `Consultas` relacionadas por chave estrangeira.
 
-## Rotas principais
-
-| Recurso | GET | POST | PUT | DELETE |
-|---|---|---|---|---|
-| Tutores | `/api/Tutores` | `/api/Tutores` | `/api/Tutores/{id}` | `/api/Tutores/{id}` |
-| Pets | `/api/Pets` | `/api/Pets` | `/api/Pets/{id}` | `/api/Pets/{id}` |
-| Vacinas | `/api/Vacinas` | `/api/Vacinas` | `/api/Vacinas/{id}` | `/api/Vacinas/{id}` |
-| Consultas | `/api/Consulta` | `/api/Consulta` | `/api/Consulta/{id}` | `/api/Consulta/{id}` |
-
-Outras rotas de pesquisa ficam documentadas no Swagger.
-
-## How To - deploy completo
-
-Os passos abaixo devem ser seguidos nesta mesma ordem durante a gravacao. Eles
-podem ser executados no Azure Cloud Shell (Bash) ou em um terminal Bash com as
-ferramentas instaladas.
-
-### 1. Pre-requisitos
-
-- assinatura Azure ativa;
-- Git e Azure CLI;
-- .NET SDK 8;
-- `zip`, `curl` e `jq`;
-- `sqlcmd`.
-
-O `sqlcmd` esta disponivel por padrao no Azure Cloud Shell. Documentacao:
-[instalar e usar sqlcmd](https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-download-install).
-
-### 2. Comecar pelo clone do GitHub
+## Executando localmente
 
 ```bash
-git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
-cd ChallengeAPI
-chmod +x scripts/*.sh
-az login
+dotnet restore
+dotnet build
+dotnet test
+dotnet run --project ChallengeAPI.csproj
 ```
 
-No Cloud Shell, o login ja costuma estar associado a conta selecionada.
+A connection string do banco é lida de `appsettings.json` (ambiente local) ou das configurações do Azure App Service em produção — nunca versionada com credenciais reais.
 
-### 3. Conferir os nomes dos recursos
-
-O RM do representante ja esta configurado como `rm563304`. Para usar outro RM
-ou uma regiao permitida pela assinatura, exporte antes de executar os scripts:
-
-```bash
-export RM=rm563304
-export LOCATION=eastus
-source scripts/00_config.sh
-print_configuration
-```
-
-Os nomes globais do App Service e do SQL Server usam o numero do RM como sufixo.
-
-### 4. Criar o Resource Group
-
-```bash
-./scripts/01_create-resource-group.sh
-```
-
-### 5. Criar o App Service
-
-```bash
-./scripts/02_create-app-service.sh
-```
-
-Esse script cria o App Service Plan Linux e o Web App com `DOTNETCORE:8.0`.
-
-### 6. Criar o Azure SQL e configurar a integracao
-
-Defina uma senha forte apenas na sessao atual. Ela nao sera escrita no
-repositorio nem no `appsettings.json`:
-
-```bash
-read -r -s -p "Senha forte do Azure SQL: " SQL_ADMIN_PASSWORD
-echo
-export SQL_ADMIN_PASSWORD
-./scripts/03_create-azure-sql.sh
-```
-
-O script cria o servidor e o banco PaaS, configura as regras de rede e grava a
-connection string nas configuracoes protegidas do App Service.
-
-### 7. Criar as tabelas e os dados iniciais
-
-```bash
-./scripts/04_initialize-database.sh
-```
-
-Ao final devem aparecer cinco registros em cada uma das quatro tabelas.
-
-### 8. Testar, publicar e implantar a API
-
-```bash
-./scripts/05_deploy-app-service.sh
-```
-
-O script executa `dotnet restore`, `dotnet test` e `dotnet publish`, gera um ZIP
-com os binarios publicados e usa `az webapp deploy`. O pacote nao deve conter
-uma pasta superior: os arquivos publicados ficam diretamente na raiz do ZIP,
-como exige o ZIP deploy do App Service.
-
-Ao concluir:
-
-```text
-https://clyvovet-api-563304.azurewebsites.net/swagger
-https://clyvovet-api-563304.azurewebsites.net/scalar
-https://clyvovet-api-563304.azurewebsites.net/health
-```
-
-### 9. Demonstrar o CRUD e a persistencia
-
-Execute sem cortes:
-
-```bash
-./scripts/06_test-crud.sh
-```
-
-O script demonstra, individualmente, em duas tabelas relacionadas:
-
-1. `INSERT` de Tutor pela API e `SELECT` direto no banco;
-2. `INSERT` de Pet relacionado e `SELECT` direto no banco;
-3. `UPDATE` de Tutor e de Pet, cada um seguido de `SELECT`;
-4. `GET` dos dois registros pela API;
-5. `DELETE` de Pet e Tutor, cada um seguido de `SELECT` sem linhas.
-
-Tambem e possivel acompanhar os dados pelo Query Editor do Azure SQL no portal.
-
-### 10. Consultar logs, se necessario
-
-```bash
-source scripts/00_config.sh
-az webapp log tail --resource-group "$RESOURCE_GROUP" --name "$WEBAPP_NAME"
-```
-
-### 11. Remover os recursos depois da avaliacao
-
-O Azure SQL pode gerar custo enquanto permanecer ativo. Remova o Resource Group
-somente depois de concluir o video e confirmar que o professor nao precisa do
-ambiente em execucao:
-
-```bash
-./scripts/99_delete-azure.sh
-```
-
-## Seguranca
-
-- nenhuma senha, token ou connection string real esta versionada;
-- a senha e digitada de forma oculta e permanece somente na sessao;
-- a connection string de producao e armazenada nas configuracoes do App Service;
-- o trafego entre a API e o Azure SQL utiliza criptografia;
-- `appsettings.json` contem apenas uma configuracao local sem credenciais.
-
-## Evidencias exigidas no video
-
-O roteiro completo esta em [`docs/roteiro-video.md`](docs/roteiro-video.md). Nao
-realize cortes durante os testes da API nem entre uma operacao e o respectivo
-`SELECT` no banco.
-
-## Integrantes
+## Equipe
 
 | Nome | RM |
 |---|---|
-| Eduardo Augusto de Oliveira Souza | RM565269 |
-| Fellipe Costa de Oliveira | RM564673 |
-| Felype Ferreira Maschio | RM563009 |
 | Gustavo Vieira de Matos | RM563304 |
 | Pedro Henrique dos Santos Costa | RM562156 |
 
-## Disciplina
-
-DevOps Tools & Cloud Computing - Sprint 3 - 2TDS - 2o semestre de 2026.
-
-## Referencias tecnicas
-
-- [Deploy de arquivos no Azure App Service](https://learn.microsoft.com/azure/app-service/deploy-zip)
-- [Quickstart do ASP.NET Core no App Service](https://learn.microsoft.com/azure/app-service/quickstart-dotnetcore)
-- [Azure CLI para App Service](https://learn.microsoft.com/cli/azure/webapp)
-- [Azure CLI para Azure SQL](https://learn.microsoft.com/cli/azure/sql)
+Disciplina: **DevOps Tools & Cloud Computing** — Sprint 4 — Challenge 2026 — FIAP.

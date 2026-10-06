@@ -9,6 +9,10 @@ using Serilog.Context;
 using ChallengeAPI.Telemetry;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
+using ChallengeAPI.Settings;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using ChallengeAPI.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +74,24 @@ builder.Services.AddHealthChecks()
         failureStatus: HealthStatus.Unhealthy,
         tags: new[] { "db", "oracle" }
     );
+
+builder.Services.Configure<MongoDbSettings>(
+    builder.Configuration.GetSection("MongoDbSettings"));
+
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    return new MongoClient(settings.ConnectionString);
+});
+
+builder.Services.AddScoped(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    var client = sp.GetRequiredService<IMongoClient>();
+    return client.GetDatabase(settings.DatabaseName);
+});
+
+builder.Services.AddScoped<MongoPetRepository>();
 
 var app = builder.Build();
 

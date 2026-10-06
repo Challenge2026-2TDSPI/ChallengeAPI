@@ -3,5 +3,6 @@
 bin/
 obj/
 logs/
-
 TestResults/
+appsettings.json
+appsettings.Development.json

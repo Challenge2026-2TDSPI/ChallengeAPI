@@ -13,6 +13,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="MongoDB.Driver" Version="3.12.0" />
 		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.18.0" />
 		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0" />
@@ -25,5 +26,11 @@
 	<ItemGroup>
 		<Compile Remove="ChallengeAPI.UnitTests/**/*.cs" />
 		<Compile Remove="ChallengeAPI.IntegrationTests/**/*.cs" />
+
+		<Content Remove="ChallengeAPI.UnitTests/**" />
+		<Content Remove="ChallengeAPI.IntegrationTests/**" />
+
+		<None Remove="ChallengeAPI.UnitTests/**" />
+		<None Remove="ChallengeAPI.IntegrationTests/**" />
 	</ItemGroup>
 </Project>

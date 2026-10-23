@@ -1,3 +1,4 @@
+
 using ChallengeAPI.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -9,6 +10,16 @@ namespace ChallengeAPI.IntegrationTests;
 
 public class ApiFactory : WebApplicationFactory<Program>
 {
+    static ApiFactory()
+    {
+        Environment.SetEnvironmentVariable(
+            "Jwt__SecretKey",
+            "TestSecretKeyThatIsAtLeast32CharactersLong!");
+
+        Environment.SetEnvironmentVariable("Jwt__Issuer", "ChallengeAPI");
+        Environment.SetEnvironmentVariable("Jwt__Audience", "ChallengeAPI");
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");

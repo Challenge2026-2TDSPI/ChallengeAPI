@@ -6,7 +6,18 @@ if (-not $currentPlan) {
 } elseif ($currentPlan -ne $planId) {
     throw 'O Web App existente esta associado a outro plano.'
 }
-Invoke-Azure -Arguments @('webapp','config','set','--name',$WebAppName,'--resource-group',$ResourceGroup,'--linux-fx-version','DOTNETCORE|8.0','--startup-file','dotnet ChallengeAPI.dll','--min-tls-version','1.2','--only-show-errors','--output','none')
+$configPath = [IO.Path]::GetTempFileName()
+try {
+    $siteConfig = @{
+        linuxFxVersion = 'DOTNETCORE|8.0'
+        appCommandLine = 'dotnet ChallengeAPI.dll'
+        minTlsVersion = '1.2'
+    } | ConvertTo-Json
+    [IO.File]::WriteAllText($configPath, $siteConfig, (New-Object Text.UTF8Encoding($false)))
+    Invoke-Azure -Arguments @('webapp','config','set','--name',$WebAppName,'--resource-group',$ResourceGroup,'--generic-configurations',"@$configPath",'--only-show-errors','--output','none')
+} finally {
+    Remove-Item -LiteralPath $configPath -Force
+}
 Invoke-Azure -Arguments @('webapp','update','--name',$WebAppName,'--resource-group',$ResourceGroup,'--https-only','true','--only-show-errors','--output','none')
 Write-Host "Web App pronto: $WebAppName"
 if ($env:TF_BUILD) {

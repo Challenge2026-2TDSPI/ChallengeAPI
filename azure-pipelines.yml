@@ -1,0 +1,166 @@
+# Copie azure-pipelines.yml e a pasta scripts/ para a raiz da API.
+# Edite os dados de recursos SOMENTE em scripts/config.sh.
+# Autorize a conexao Azure Resource Manager: azure-challengeapi.
+# O grupo de recursos deve existir antes se a conexao for limitada a esse grupo.
+#
+# Variaveis em Azure DevOps > Pipeline > Edit > Variables:
+# OracleConnection [SECRET]: string Oracle completa (obrigatoria).
+# JwtSecretKey [SECRET]: chave JWT com pelo menos 32 bytes (obrigatoria).
+# JwtIssuer e JwtAudience: valores atuais; padrao ChallengeAPI se nao definidos.
+# MongoConnection [SECRET] e MongoDatabase: opcionais; se omitidos, preserva os existentes.
+# Os testes usam memoria; /health verifica o Oracle depois do deploy.
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+pr: none
+variables:
+  azureSubscription: azure-challengeapi
+  buildConfiguration: Release
+  artifactName: app
+stages:
+- stage: Infraestrutura
+  displayName: Criar infraestrutura
+  jobs:
+  - job: CriarInfra
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: Criar grupo de recursos
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: scripts/01-criar-grupo.sh
+        visibleAzLogin: false
+    - task: AzureCLI@2
+      displayName: Criar plano Linux
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: scripts/02-criar-plano.sh
+        visibleAzLogin: false
+    - task: AzureCLI@2
+      displayName: Criar Web App .NET 8
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: scripts/03-criar-webapp.sh
+        visibleAzLogin: false
+      name: webapp
+- stage: BuildTestes
+  displayName: Build, testes e artefato
+  dependsOn: Infraestrutura
+  condition: succeeded()
+  jobs:
+  - job: BuildTest
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: UseDotNet@2
+      displayName: SDK .NET 8
+      inputs:
+        packageType: sdk
+        version: 8.0.x
+    - task: DotNetCoreCLI@2
+      displayName: Restaurar dependencias
+      inputs:
+        command: restore
+        projects: ChallengeAPI.sln
+    - task: DotNetCoreCLI@2
+      displayName: Compilar solucao
+      inputs:
+        command: build
+        projects: ChallengeAPI.sln
+        arguments: --configuration $(buildConfiguration) --no-restore
+    - task: DotNetCoreCLI@2
+      displayName: Executar testes unitarios e de integracao
+      inputs:
+        command: test
+        projects: ChallengeAPI.sln
+        arguments: --configuration $(buildConfiguration) --no-build --no-restore
+        publishTestResults: true
+        testRunTitle: Testes ChallengeAPI
+    - task: DotNetCoreCLI@2
+      displayName: Publicar API
+      inputs:
+        command: publish
+        publishWebProjects: false
+        projects: ChallengeAPI.csproj
+        arguments: --configuration $(buildConfiguration) --no-build --no-restore --output $(Build.ArtifactStagingDirectory)/publish
+        zipAfterPublish: false
+        modifyOutputPath: false
+    - task: ArchiveFiles@2
+      displayName: Compactar aplicacao
+      inputs:
+        rootFolderOrFile: $(Build.ArtifactStagingDirectory)/publish
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(artifactName).zip
+        replaceExistingArchive: true
+    - task: PublishPipelineArtifact@1
+      displayName: Publicar artefato
+      inputs:
+        targetPath: $(Build.ArtifactStagingDirectory)/$(artifactName).zip
+        artifact: $(artifactName)
+        publishLocation: pipeline
+- stage: Deploy
+  displayName: Deploy no Azure App Service
+  dependsOn:
+  - Infraestrutura
+  - BuildTestes
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  variables:
+    webAppName: $[ stageDependencies.Infraestrutura.CriarInfra.outputs['webapp.webAppName'] ]
+  jobs:
+  - job: DeployWebApp
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: DownloadPipelineArtifact@2
+      displayName: Baixar artefato
+      inputs:
+        buildType: current
+        artifactName: $(artifactName)
+        targetPath: $(Pipeline.Workspace)/$(artifactName)
+    - task: AzureCLI@2
+      displayName: Configurar variaveis protegidas da API
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: scripts/04-configurar-api.sh
+        visibleAzLogin: false
+      env:
+        ORACLE_CONNECTION: $(OracleConnection)
+        JWT_SECRET_KEY: $(JwtSecretKey)
+        JWT_ISSUER: $(JwtIssuer)
+        JWT_AUDIENCE: $(JwtAudience)
+        MONGO_CONNECTION: $(MongoConnection)
+        MONGO_DATABASE: $(MongoDatabase)
+    - task: AzureWebApp@1
+      displayName: Deploy da API
+      inputs:
+        azureSubscription: $(azureSubscription)
+        appType: webAppLinux
+        appName: $(webAppName)
+        package: $(Pipeline.Workspace)/$(artifactName)/$(artifactName).zip
+        runtimeStack: DOTNETCORE|8.0
+        startUpCommand: dotnet ChallengeAPI.dll
+        deploymentMethod: zipDeploy
+    - task: AzureCLI@2
+      displayName: Conferir API e Oracle
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: scriptPath
+        scriptPath: scripts/05-verificar-api.sh
+        visibleAzLogin: false

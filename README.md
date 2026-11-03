@@ -1,637 +1,234 @@
-# CLYVO VET — ChallengeAPI
+# ChallengeAPI — Sprint 4 DevOps
 
-> API RESTful para gestão da jornada contínua de saúde do pet, desenvolvida em ASP.NET Core 8, com persistência em Oracle Database e MongoDB, autenticação JWT e observabilidade.
+API em ASP.NET Core 8 para gerenciamento de tutores, pets, consultas e vacinas. A branch `master` reúne a aplicação, os testes automatizados, os scripts de infraestrutura e o pipeline de publicação no Azure App Service.
 
----
-
-## Índice
-
-- [Descrição do Projeto](#descrição-do-projeto)
-- [Benefícios para o Negócio](#benefícios-para-o-negócio)
-- [Funcionalidades](#funcionalidades)
-- [Arquitetura Macro](#arquitetura-macro)
-- [Relacionamentos da Aplicação](#relacionamentos-da-aplicação)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Rotas da API](#rotas-da-api)
-- [Autenticação JWT](#autenticação-jwt)
-- [Health Check](#health-check)
-- [Logging e Observabilidade](#logging-e-observabilidade)
-- [Como Instalar e Executar](#como-instalar-e-executar)
-- [Configuração de Segredos](#configuração-de-segredos)
-- [Documentação OpenAPI](#documentação-openapi)
-- [Testes Automatizados](#testes-automatizados)
-- [Docker e Azure](#docker-e-azure)
-- [Equipe](#equipe)
-- [Disciplina e Objetivo Acadêmico](#disciplina-e-objetivo-acadêmico)
-
----
-
-## Descrição do Projeto
-
-A **CLYVO VET API** é uma solução REST desenvolvida em .NET 8 para apoiar a gestão contínua da saúde de animais de estimação.
-
-O sistema permite organizar informações de tutores, pets, vacinas e consultas veterinárias, estruturando o histórico de saúde dos animais e facilitando o acompanhamento preventivo.
-
-Ao longo das sprints, a aplicação recebeu funcionalidades de persistência relacional, integração com banco de dados NoSQL, autenticação, documentação interativa, monitoramento de saúde e observabilidade.
-
-## Benefícios para o Negócio
-
-| Benefício | Impacto |
-|---|---|
-| Histórico estruturado | Centraliza informações relevantes sobre a saúde dos pets. |
-| Acompanhamento preventivo | Facilita o registro de vacinas e consultas. |
-| Continuidade do cuidado | Ajuda a manter o histórico do animal organizado. |
-| Apoio à decisão clínica | Disponibiliza informações estruturadas para consulta. |
-| Organização operacional | Permite gerenciar tutores, pets e registros veterinários por meio de uma API. |
-
----
+O Oracle armazena os dados relacionais. A aplicação também possui endpoints específicos para pets no MongoDB. A entrega de DevOps automatiza a preparação dos recursos, a compilação, os testes e a publicação de alterações enviadas à `master`.
 
 ## Funcionalidades
 
-### Gestão de dados
+- Cadastro, consulta, atualização e exclusão de tutores, pets, consultas e vacinas.
+- Filtros de consulta, como nome do tutor, espécie do pet e veterinário da consulta.
+- Endpoints de pets no MongoDB e de verificação dessa integração.
+- Geração de token JWT e endpoint protegido para validar a autenticação.
+- Documentação interativa com Swagger e Scalar.
+- Verificação de saúde da aplicação e da conexão Oracle.
+- Rota `/versao` para identificar uma alteração publicada pelo pipeline.
 
-- Cadastro, consulta, atualização e remoção de registros por meio de endpoints REST.
-- Gerenciamento de tutores e pets.
-- Registro de vacinas e consultas veterinárias.
-- Persistência relacional utilizando Oracle Database e Entity Framework Core.
+A autenticação é aplicada aos endpoints marcados com `Authorize`; a existência de JWT na aplicação não significa que todas as rotas exigem token.
 
-### Autenticação e autorização
+## Tecnologias
 
-- Autenticação baseada em JWT.
-- Emissão e validação de tokens.
-- Proteção de endpoints com autorização.
-- Integração do esquema Bearer com o Swagger UI.
+| Componente | Tecnologia |
+| --- | --- |
+| API | C#, .NET 8 e ASP.NET Core |
+| Persistência relacional | Entity Framework Core e Oracle |
+| Persistência documental | MongoDB.Driver |
+| Autenticação | JWT Bearer |
+| Documentação | Swagger/OpenAPI e Scalar |
+| Logs e telemetria | Serilog e OpenTelemetry |
+| Testes | xUnit, Moq e WebApplicationFactory |
+| Automação | Azure Pipelines, Azure CLI e PowerShell |
+| Agente | Windows, self-hosted |
+| Hospedagem | Azure App Service Linux, plano F1 |
 
-### Persistência NoSQL
+## Arquitetura e fluxo de entrega
 
-- Integração com MongoDB Atlas.
-- Configuração por meio de `MongoDbSettings`.
-- Endpoint de teste de conectividade em `/api/MongoTest`.
-
-### Monitoramento e observabilidade
-
-- Health Check em `/health`.
-- Logging estruturado com Serilog.
-- Tracing e métricas com OpenTelemetry.
-- Exportação de dados de observabilidade para o console durante a execução local.
-
----
-
-## Arquitetura Macro
-
-A aplicação é organizada em uma API ASP.NET Core, com controladores responsáveis pelas requisições HTTP, serviços para funcionalidades específicas e repositórios para acesso aos dados quando aplicável.
-
-```text
-                    Cliente HTTP
-             Swagger / Scalar / Postman
-                         |
-                         v
-              +----------------------+
-              |   ASP.NET Core 8     |
-              |     ChallengeAPI     |
-              +----------------------+
-                         |
-             +-----------+-----------+
-             |           |           |
-             v           v           v
-         Controllers  Services   Observability
-             |                       |
-             v                       v
-        Entity Framework          Serilog
-             |                    OpenTelemetry
-             v
-       Oracle Database
-
-        MongoDB.Driver
-             |
-             v
-        MongoDB Atlas
+```mermaid
+flowchart TD
+    DEV["Desenvolvedor"] -->|"1. Commit e push na master"| GIT["GitHub: código da API"]
+    GIT -->|"2. Gatilho automático"| PIPE["Azure Pipelines"]
+    PIPE -->|"3. Agenda os jobs"| AGENT["Agente Windows PIPOCO / pool Default"]
+    CONN["Service connection azure-challengeapi"] -->|"Autenticação no Azure"| AGENT
+    VARS["Variáveis secretas do pipeline"] -->|"Configuração da aplicação"| AGENT
+    AGENT -->|"4. Scripts de infraestrutura"| AZURE["Grupo de recursos e plano Linux F1"]
+    AGENT -->|"5. Build e testes; gera app.zip"| ART["Artefato app"]
+    ART -->|"6. Download pelo job de deploy"| AGENT
+    AGENT -->|"7. Configuração e Zip Deploy"| APP["App Service: API .NET 8"]
+    AZURE -->|"Hospedagem"| APP
+    AGENT -->|"8. Verifica OpenAPI e health"| APP
+    USER["Usuário ou avaliador"] -->|"HTTPS: Swagger, Scalar ou cliente HTTP"| APP
+    APP -->|"Dados relacionais"| ORACLE["Oracle FIAP"]
+    APP -->|"Endpoints MongoDB"| MONGO["MongoDB"]
 ```
 
-A infraestrutura com Docker e Azure faz parte do contexto de DevOps e Cloud Computing. Para desenvolvimento e validação local da API .NET, utilize a execução pelo Visual Studio ou pelo terminal.
-
-## Relacionamentos da Aplicação
-
-```text
-Tutor
- └── Pets
-      ├── Vacinas
-      └── Consultas
-```
-
-### Relações implementadas
-
-- Um tutor pode possuir vários pets.
-- Um pet pertence a um tutor.
-- Um pet pode possuir várias vacinas.
-- Um pet pode possuir várias consultas.
-
-As relações do modelo relacional são implementadas com Entity Framework Core e Oracle Database.
-
----
-
-## Tecnologias Utilizadas
-
-| Tecnologia | Finalidade |
-|---|---|
-| C# / ASP.NET Core 8 | Desenvolvimento da API REST |
-| Entity Framework Core | Mapeamento objeto-relacional e persistência |
-| Oracle Database | Persistência relacional |
-| Oracle Entity Framework Core Provider | Integração do EF Core com Oracle |
-| MongoDB.Driver | Acesso ao MongoDB |
-| MongoDB Atlas | Banco de dados NoSQL |
-| JWT / Bearer Authentication | Autenticação e autorização |
-| Swagger / OpenAPI | Documentação e testes dos endpoints |
-| Scalar | Interface alternativa para explorar a API |
-| Serilog | Logging estruturado |
-| OpenTelemetry | Tracing e métricas |
-| xUnit / Moq | Ferramentas de testes automatizados |
-| EF Core InMemory | Persistência em memória para testes |
-| Docker / Docker Compose | Containerização e orquestração |
-| Microsoft Azure / Azure CLI | Infraestrutura em nuvem |
-| Git / GitHub | Versionamento e colaboração |
-
----
-
-## Estrutura do Projeto
-
-A estrutura pode variar conforme os arquivos e projetos de teste presentes na solução.
-
-```text
-ChallengeAPI/
-├── Controllers/
-│   ├── AuthController.cs
-│   ├── MongoTestController.cs
-│   ├── ConsultasController.cs
-│   ├── PetsController.cs
-│   ├── TutoresController.cs
-│   └── VacinasController.cs
-├── Data/
-│   └── AppDbContext.cs
-├── Models/
-├── Repositories/
-├── Services/
-│   └── TokenService.cs
-├── Settings/
-├── SettingsJWT/
-├── Telemetry/
-├── Properties/
-├── ChallengeAPI.IntegrationTests/
-├── ChallengeAPI.UnitTests/
-├── Program.cs
-├── ChallengeAPI.csproj
-└── README.md
-```
-
-> A lista é ilustrativa: mantenha no repositório os nomes e diretórios que realmente existem na sua solução.
-
----
-
-## Rotas da API
-
-As rotas abaixo refletem os endpoints documentados no projeto. Os códigos HTTP indicados são os resultados esperados para operações bem-sucedidas ou situações comuns de validação; a resposta efetiva depende da requisição e das regras de cada controlador.
-
-### Tutores
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | `/api/Tutores` | Lista os tutores |
-| GET | `/api/Tutores/{id}` | Busca um tutor por ID |
-| POST | `/api/Tutores` | Cadastra um tutor |
-| PUT | `/api/Tutores/{id}` | Atualiza um tutor |
-| DELETE | `/api/Tutores/{id}` | Remove um tutor |
-
-### Pets
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | `/api/Pets` | Lista os pets |
-| GET | `/api/Pets/{id}` | Busca um pet por ID |
-| GET | `/api/Pets/nome/{nome}` | Busca pets por nome |
-| POST | `/api/Pets` | Cadastra um pet |
-| PUT | `/api/Pets/{id}` | Atualiza um pet |
-| DELETE | `/api/Pets/{id}` | Remove um pet |
+O agente Windows executa as tarefas de automação. A API é executada no App Service Linux. O pipeline utiliza uma conexão de serviço para acessar o Azure e variáveis secretas para fornecer as configurações sensíveis.
+
+## Estrutura do projeto
+
+| Caminho | Responsabilidade |
+| --- | --- |
+| `Program.cs` | Configuração da aplicação, serviços, autenticação, documentação e health check |
+| `Controllers/` | Endpoints HTTP |
+| `Models/` | Modelos de dados |
+| `Data/` | Contexto do Entity Framework Core |
+| `Migrations/` | Migrações do modelo relacional |
+| `Repositories/` | Acesso aos dados MongoDB |
+| `Services/` | Serviços da aplicação, incluindo geração de tokens |
+| `Settings/` e `SettingsJWT/` | Classes de configuração |
+| `Telemetry/` | Métricas e instrumentação |
+| `ChallengeAPI.UnitTests/` | Testes unitários |
+| `ChallengeAPI.IntegrationTests/` | Testes de integração |
+| `scripts/` | Automação de infraestrutura e configuração |
+| `azure-pipelines.yml` | Definição do pipeline |
+| `docker/` | Arquivos para execução em contêiner |
 
-### Vacinas
+## Endpoints principais
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | `/api/Vacinas` | Lista as vacinas |
-| GET | `/api/Vacinas/{id}` | Busca uma vacina por ID |
-| GET | `/api/Vacinas/pet/{petId}` | Lista as vacinas de um pet |
-| POST | `/api/Vacinas` | Registra uma vacina |
-| PUT | `/api/Vacinas/{id}` | Atualiza uma vacina |
-| DELETE | `/api/Vacinas/{id}` | Remove uma vacina |
+| Rota | Operações |
+| --- | --- |
+| `/api/Tutores` | Listagem e cadastro de tutores |
+| `/api/Tutores/{id}` | Consulta, atualização e exclusão de um tutor |
+| `/api/Pets` e `/api/Pets/{id}` | CRUD de pets |
+| `/api/Consulta` e `/api/Consulta/{id}` | CRUD de consultas |
+| `/api/Vacinas` e `/api/Vacinas/{id}` | CRUD de vacinas |
+| `/api/MongoPet` e `/api/MongoPet/{id}` | CRUD de pets no MongoDB |
+| `/api/MongoTest` | Verificação da integração MongoDB |
+| `/api/Auth/login` | Geração de token |
+| `/api/Auth/dados-protegidos` | Exemplo de acesso autenticado |
+| `/swagger` | Interface Swagger |
+| `/swagger/v1/swagger.json` | Documento OpenAPI |
+| `/scalar/v1` | Interface Scalar |
+| `/health` | Estado de saúde e verificação Oracle |
+| `/versao` | Versão e mensagem da publicação |
 
-### Consultas
+Os parâmetros, corpos das requisições, filtros adicionais e respostas estão descritos na documentação interativa da API. A rota `/versao` retorna um valor definido no código; ela não calcula automaticamente a versão a partir do commit.
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | `/api/Consultas` | Lista as consultas |
-| GET | `/api/Consultas/{id}` | Busca uma consulta por ID |
-| GET | `/api/Consultas/pet/{petId}` | Lista consultas de um pet |
-| GET | `/api/Consultas/veterinario/{veterinario}` | Busca consultas por veterinário |
-| POST | `/api/Consultas` | Registra uma consulta |
-| PUT | `/api/Consultas/{id}` | Atualiza uma consulta |
-| DELETE | `/api/Consultas/{id}` | Remove uma consulta |
+## Recursos no Azure
 
-### Autenticação e monitoramento
+Os nomes utilizados pelos scripts PowerShell estão centralizados em `scripts/config.ps1`.
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| POST | `/api/Auth/login` | Autentica o usuário e retorna um JWT |
-| GET | `/api/Auth/dados-protegidos` | Exemplo de endpoint protegido por JWT |
-| GET | `/api/MongoTest` | Verifica a conectividade com MongoDB |
-| GET | `/health` | Verifica a saúde dos componentes monitorados |
+| Configuração | Valor |
+| --- | --- |
+| Grupo de recursos | `rg-challengeapi-sprint4` |
+| Plano | `plan-challengeapi-sprint4` |
+| Web App | `clyvovet-api-rm562156` |
+| Região | `brazilsouth` |
+| SKU | `F1` |
+| Runtime | .NET 8 em Linux |
+| Comando de inicialização | `dotnet ChallengeAPI.dll` |
+| Service connection | `azure-challengeapi` |
+| Pool de agentes | `Default` |
+| Agente | `PIPOCO` |
 
-Consulte o Swagger ou o Scalar para visualizar os parâmetros, os modelos de requisição e as respostas efetivamente documentadas.
+O Oracle e o MongoDB são serviços externos à infraestrutura criada por esses scripts. O pipeline configura o acesso a eles, mas não provisiona os bancos nem executa migrações automaticamente.
 
----
+## Scripts PowerShell utilizados pelo pipeline
 
-## Autenticação JWT
+| Arquivo | Função |
+| --- | --- |
+| `config.ps1` | Define os recursos e a função que executa Azure CLI verificando o código de saída |
+| `01-criar-grupo.ps1` | Cria o grupo de recursos quando ele ainda não existe |
+| `02-criar-plano.ps1` | Cria o plano Linux F1 ou valida o plano existente |
+| `03-criar-webapp.ps1` | Cria ou reutiliza o Web App, configura .NET 8, inicialização e HTTPS |
+| `04-configurar-api.ps1` | Aplica as configurações da API a partir das variáveis de ambiente |
+| `05-verificar-api.ps1` | Verifica o documento OpenAPI e o estado Healthy do endpoint de saúde |
 
-A API utiliza autenticação Bearer com JSON Web Tokens (JWT).
+Os scripts de infraestrutura reutilizam os recursos existentes quando compatíveis. O script do plano interrompe a execução se o recurso existente não for Linux F1. O script do Web App verifica se ele pertence ao plano esperado.
 
-### Fluxo de autenticação
+O script `04` exige a conexão Oracle e uma chave JWT de pelo menos 32 bytes. Quando uma conexão MongoDB é informada, também exige o nome do banco. Quando ela é omitida, preserva as configurações MongoDB existentes no App Service. O arquivo temporário usado para enviar as configurações recebe acesso restrito ao usuário Windows que executa o agente e é removido ao final.
 
-1. Envie uma requisição `POST` para `/api/Auth/login` com as credenciais esperadas pelo controlador.
-2. Copie o token JWT retornado.
-3. No Swagger UI, clique em **Authorize**.
-4. Informe o token conforme o esquema Bearer apresentado na interface.
-5. Execute um endpoint protegido, como `/api/Auth/dados-protegidos`.
+O script `05` realiza até 12 tentativas por endpoint, com intervalos de 10 segundos entre falhas. A verificação automática de saúde cobre o Oracle; ela não substitui um teste dos endpoints MongoDB ou do CRUD completo.
 
-A API valida o token utilizando os parâmetros configurados para chave de assinatura, emissor, audiência e validade.
+### Scripts Bash e implantação anterior
 
-### Segurança
+Os arquivos numerados `01` a `05` com extensão `.sh`, junto de `config.sh`, compõem a alternativa Bash para o fluxo de App Service. O pipeline atual chama os arquivos `.ps1`.
 
-- Não publique chaves JWT, senhas ou tokens no repositório.
-- Não inclua credenciais reais em `appsettings.json`, exemplos de código ou documentação pública.
-- Utilize User Secrets no desenvolvimento local.
-- Em produção, utilize um mecanismo seguro de configuração de credenciais.
+`setup-azure.sh` e `delete-azure.sh` pertencem à implantação anterior em máquina virtual e utilizam o grupo `rg-challengeapi`. O primeiro provisiona uma VM e instala ferramentas de contêiner; o segundo solicita confirmação para excluir esse grupo inteiro. Eles não fazem parte do pipeline da Sprint 4 e não gerenciam o grupo `rg-challengeapi-sprint4`.
 
----
+## Pipeline CI/CD
 
-## Health Check
+O arquivo `azure-pipelines.yml` configura o gatilho para a branch `master`, com agrupamento de alterações por `batch: true`. O gatilho de pull request está desativado no YAML.
 
-A API disponibiliza o endpoint:
+### 1. Infraestrutura
 
-```http
-GET /health
-```
+Executa os scripts PowerShell `01`, `02` e `03` usando tarefas `AzureCLI@2`. O nome do Web App é disponibilizado como variável de saída para o deploy.
 
-O Health Check verifica a disponibilidade do Oracle Database por meio do pacote `AspNetCore.HealthChecks.Oracle`.
+### 2. Build, testes e artefato
 
-A resposta apresenta o estado geral e os resultados das verificações registradas.
+Após a infraestrutura concluir com sucesso, o pipeline:
 
-Exemplo de resposta saudável:
+1. Limpa a pasta de publicação anterior do agente.
+2. Prepara o SDK .NET 8.
+3. Restaura as dependências da solução.
+4. Compila em `Release`.
+5. Executa os testes unitários e de integração e publica seus resultados.
+6. Publica o projeto da API.
+7. Compacta a aplicação em `app.zip` e publica o artefato `app`.
 
-```json
-{
-  "status": "Healthy",
-  "checks": [
-    {
-      "name": "oracle-database",
-      "status": "Healthy",
-      "description": null
-    }
-  ]
-}
-```
+### 3. Deploy
 
-O resultado depende da disponibilidade do banco e das credenciais configuradas. Quando uma dependência monitorada está indisponível, o Health Check pode retornar `Unhealthy`.
+Após as etapas anteriores concluírem com sucesso, e somente na `master`, o pipeline baixa o artefato da mesma execução, aplica as configurações com o script `04`, publica com `AzureWebApp@1` por Zip Deploy e executa o script `05`.
 
----
+Todos os jobs exigem o agente Windows `PIPOCO` no pool `Default`. O agente precisa estar online para receber os jobs. Quando executado interativamente por `run.cmd`, sua janela deve permanecer aberta.
 
-## Logging e Observabilidade
+## Configuração do pipeline
 
-### Serilog
+No Azure DevOps, configure a conexão Azure Resource Manager `azure-challengeapi` com permissão sobre os recursos utilizados e autorize o pipeline a utilizá-la. Na configuração desta entrega, a autenticação usa federação de identidade de carga de trabalho.
 
-A aplicação utiliza Serilog para registrar eventos de execução e requisições HTTP.
+Cadastre as seguintes variáveis no pipeline:
 
-Os destinos configurados são:
+| Variável | Uso | Tratamento |
+| --- | --- | --- |
+| `OracleConnection` | String de conexão Oracle | Obrigatória e secreta |
+| `JwtSecretKey` | Chave de assinatura JWT | Obrigatória e secreta; mínimo de 32 bytes |
+| `JwtIssuer` | Emissor do token | Padrão do script: `ChallengeAPI` |
+| `JwtAudience` | Público do token | Padrão do script: `ChallengeAPI` |
+| `MongoConnection` | String de conexão MongoDB | Secreta; opcional para preservar a configuração existente |
+| `MongoDatabase` | Nome do banco MongoDB | Obrigatório quando `MongoConnection` é fornecida |
 
-- Console.
-- Arquivos diários no diretório `logs/`, com nomes no formato `log-AAAA-MM-DD.txt`, conforme a configuração de rotação utilizada.
+O YAML repassa esses valores como variáveis de ambiente ao script `04`, que grava as configurações correspondentes no App Service. Valores reais de credenciais não devem ser inseridos neste README ou nos scripts.
 
-O middleware `UseSerilogRequestLogging()` registra informações das requisições, como método, caminho, status HTTP e duração.
+O agente precisa ter Git, Azure CLI e Windows PowerShell disponíveis. O SDK .NET 8 é preparado pela tarefa `UseDotNet@2`. Caso os nomes do agente, pool, conexão de serviço ou recursos mudem, atualize o YAML e `scripts/config.ps1` conforme necessário.
 
-O contexto de logging também é enriquecido com identificadores de tracing quando uma atividade está disponível.
+## Execução local da API
 
-### OpenTelemetry
+Requisitos: SDK .NET 8, acesso ao Oracle com o esquema da aplicação preparado e MongoDB configurado para utilizar os endpoints documentais.
 
-A instrumentação inclui:
-
-- Tracing das requisições ASP.NET Core.
-- Tracing de chamadas HTTP feitas por `HttpClient`.
-- Métricas HTTP.
-- Métricas customizadas da aplicação.
-- Exportação para o console durante a execução local.
-
-O projeto utiliza instrumentos customizados identificados por `AppMetrics` e a fonte de tracing `ChallengeAPI`.
-
-Esses recursos ajudam a investigar erros e acompanhar o comportamento da aplicação durante a execução.
-
----
-
-## Como Instalar e Executar
-
-### Pré-requisitos
-
-- .NET SDK 8.
-- Git.
-- Visual Studio com suporte a ASP.NET e desenvolvimento web, ou VS Code com o SDK instalado.
-- Acesso ao Oracle Database utilizado pelo projeto.
-- Acesso ao MongoDB Atlas, caso sejam testadas as funcionalidades NoSQL.
-
-Docker e Azure são necessários somente para os respectivos cenários de containerização e implantação.
-
-### 1. Clonar o repositório
-
-```bash
-git clone https://github.com/Challenge2026-2TDSPI/ChallengeAPI.git
-cd ChallengeAPI
-```
-
-### 2. Restaurar as dependências
-
-Na pasta que contém `ChallengeAPI.csproj`, execute:
-
-```bash
-dotnet restore
-dotnet build
-```
-
-### 3. Configurar as credenciais
-
-Configure as strings de conexão e os parâmetros JWT por User Secrets, conforme a seção [Configuração de Segredos](#configuração-de-segredos).
-
-Verifique se o Oracle e o MongoDB estão acessíveis antes de testar os respectivos endpoints.
-
-### 4. Executar pelo Visual Studio
-
-1. Abra a solução no Visual Studio.
-2. Selecione `ChallengeAPI` como projeto de inicialização.
-3. Execute a aplicação.
-4. Consulte a URL e a porta apresentadas pelo Visual Studio.
-
-A porta pode variar conforme o perfil de execução. Utilize o endereço exibido na sua máquina.
-
-### 5. Executar pelo terminal
-
-Dentro da pasta da API:
-
-```bash
-dotnet run
-```
-
-Acesse os endereços correspondentes à porta indicada no terminal.
-
-Exemplo, caso a aplicação esteja rodando em `http://localhost:5241`:
-
-- Swagger: `http://localhost:5241/swagger`
-- Health Check: `http://localhost:5241/health`
-- Teste MongoDB: `http://localhost:5241/api/MongoTest`
-
-### 6. Encerrar a aplicação
-
-No terminal em que a API está rodando, pressione `Ctrl + C`.
-
----
-
-## Configuração de Segredos
-
-As credenciais são específicas de cada ambiente e não devem ser incluídas no repositório.
-
-### Oracle Database
-
-Configure a chave `ConnectionStrings:OracleConnection`:
+Na pasta da solução, configure as credenciais localmente com User Secrets. Substitua os textos entre `< >` pelos valores do seu ambiente:
 
 ```powershell
-dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:OracleConnection" "User Id=SEU_USUARIO;Password=SUA_SENHA;Data Source=SEU_DATA_SOURCE"
+dotnet user-secrets set "ConnectionStrings:OracleConnection" "<string de conexao Oracle>" --project ChallengeAPI.csproj
+dotnet user-secrets set "Jwt:SecretKey" "<chave JWT com pelo menos 32 bytes>" --project ChallengeAPI.csproj
+dotnet user-secrets set "Jwt:Issuer" "ChallengeAPI" --project ChallengeAPI.csproj
+dotnet user-secrets set "Jwt:Audience" "ChallengeAPI" --project ChallengeAPI.csproj
+dotnet user-secrets set "MongoDbSettings:ConnectionString" "<string de conexao MongoDB>" --project ChallengeAPI.csproj
+dotnet user-secrets set "MongoDbSettings:DatabaseName" "<nome do banco MongoDB>" --project ChallengeAPI.csproj
 ```
 
-Substitua os valores pelos dados reais do banco utilizado no ambiente local.
-
-### MongoDB Atlas
-
-Configure as chaves utilizadas por `MongoDbSettings`:
+Execute em ambiente de desenvolvimento para carregar os User Secrets:
 
 ```powershell
-dotnet user-secrets set "MongoDbSettings:ConnectionString" "SUA_CONNECTION_STRING_MONGODB"
-dotnet user-secrets set "MongoDbSettings:DatabaseName" "NOME_DO_BANCO"
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet restore ChallengeAPI.sln
+dotnet build ChallengeAPI.sln --configuration Release
+dotnet run --project ChallengeAPI.csproj --no-launch-profile
 ```
 
-Utilize a URI real fornecida pelo MongoDB Atlas, com usuário e senha válidos. Verifique também as permissões do usuário e as regras de acesso à rede do cluster.
+Abra o endereço exibido no terminal acrescentando `/swagger` ou `/scalar/v1`. As tabelas do Oracle precisam existir antes de utilizar os endpoints que acessam o banco; iniciar a API não implica criar o esquema.
 
-### JWT
+## Testes e validação
 
-Configure os parâmetros utilizados pela aplicação:
+Para executar os testes automatizados:
 
 ```powershell
-dotnet user-secrets set "Jwt:SecretKey" "SUA_CHAVE_SECRETA"
-dotnet user-secrets set "Jwt:Issuer" "ChallengeAPI"
-dotnet user-secrets set "Jwt:Audience" "ChallengeAPI"
+dotnet test ChallengeAPI.sln --configuration Release
 ```
 
-A chave deve atender aos requisitos de assinatura definidos pela implementação. Os valores de emissor e audiência devem corresponder à configuração usada para emitir e validar os tokens.
+Os testes de integração utilizam uma aplicação de teste com banco em memória. Eles verificam o comportamento da API nesse ambiente; a conexão com o Oracle publicado é conferida separadamente pelo health check e pela validação manual.
 
-> Não substitua credenciais já funcionais sem necessidade. Os exemplos acima servem para configurar um novo ambiente; use os valores apropriados ao projeto.
+Para validar a persistência após o deploy:
 
-Para conferir quais chaves estão configuradas:
+1. Cadastre um tutor pelo `POST /api/Tutores` e anote o ID retornado.
+2. Consulte esse ID pela API e no Oracle.
+3. Atualize o tutor pelo `PUT /api/Tutores/{id}` e consulte novamente o banco.
+4. Exclua o registro de teste pelo `DELETE /api/Tutores/{id}` e confira que a consulta não retorna linhas.
 
-```powershell
-dotnet user-secrets list
+Exemplo de consulta no SQL Developer, substituindo `123` pelo ID retornado no cadastro:
+
+```sql
+SELECT *
+FROM "Tutores"
+WHERE "Id" = 123;
 ```
 
-Não compartilhe a saída completa desse comando quando ela contiver valores confidenciais.
-
----
-
-## Documentação OpenAPI
-
-A API utiliza Swagger/OpenAPI e Scalar para explorar e testar os endpoints.
-
-### Swagger UI
-
-```text
-http://localhost:<porta>/swagger
-```
-
-### Scalar
-
-```text
-http://localhost:<porta>/scalar/v1
-```
-
-Substitua `<porta>` pela porta exibida durante a execução da API.
-
-O Swagger permite consultar as rotas documentadas, visualizar modelos de requisição e resposta e utilizar o botão **Authorize** para testar endpoints protegidos por JWT.
-
-O documento OpenAPI é disponibilizado em:
-
-```text
-http://localhost:<porta>/swagger/v1/swagger.json
-```
-
----
-
-## Testes Automatizados
-
-A solução possui projetos destinados a testes unitários e de integração:
-
-```text
-ChallengeAPI.UnitTests/
-ChallengeAPI.IntegrationTests/
-```
-
-### Testes unitários
-
-O projeto utiliza ferramentas como:
-
-- xUnit.
-- Moq.
-- EF Core InMemory, quando aplicável.
-- Padrão AAA (Arrange, Act, Assert).
-
-Esses testes permitem avaliar comportamentos específicos sem depender necessariamente de um banco de dados real.
-
-### Testes de integração
-
-O projeto utiliza ferramentas como:
-
-- xUnit.
-- `WebApplicationFactory`.
-- `ICollectionFixture`.
-- EF Core InMemory, conforme a configuração dos testes.
-
-Os testes de integração permitem executar a aplicação em ambiente de teste e realizar requisições HTTP contra os endpoints.
-
-### Executar os testes
-
-Na raiz da solução:
-
-```bash
-dotnet restore
-dotnet build
-dotnet test
-```
-
-Os testes também podem ser executados pelo **Test Explorer** do Visual Studio.
-
----
-
-## Docker e Azure
-
-A containerização e a infraestrutura em nuvem fazem parte do contexto de DevOps e Cloud Computing do projeto. A execução local habitual da API .NET pode ser feita pelo Visual Studio, independentemente de um deploy em nuvem.
-
-### Docker Compose
-
-Caso os arquivos de Docker estejam disponíveis no repositório, a inicialização do ambiente containerizado pode ser realizada com:
-
-```bash
-docker compose -f docker/docker-compose.yml up -d --build
-```
-
-Verifique os containers:
-
-```bash
-docker compose -f docker/docker-compose.yml ps
-```
-
-Consulte os logs:
-
-```bash
-docker compose -f docker/docker-compose.yml logs
-```
-
-Para encerrar os containers:
-
-```bash
-docker compose -f docker/docker-compose.yml down
-```
-
-Antes de executar esse cenário, confira as variáveis de ambiente e as strings de conexão no arquivo Compose. Não utilize credenciais de exemplo em ambientes públicos ou de produção.
-
-### Dockerfile
-
-O Dockerfile do projeto utiliza uma imagem do SDK .NET para compilar a aplicação e uma imagem ASP.NET para executá-la, seguindo uma abordagem de build em múltiplos estágios.
-
-O container da API utiliza a porta interna `8080` quando configurado conforme o Dockerfile documentado.
-
-### Azure CLI
-
-Os scripts de infraestrutura ficam no diretório `scripts/`, quando presentes no repositório:
-
-```text
-scripts/setup-azure.sh
-scripts/delete-azure.sh
-```
-
-O script de provisionamento pode criar recursos de infraestrutura na Azure, dependendo de sua implementação e das permissões disponíveis.
-
-**Atenção:** comandos de criação e remoção de recursos na nuvem podem gerar custos ou excluir recursos. Revise os scripts e confirme o grupo de recursos antes de executá-los.
-
-A documentação de Docker e Azure descreve o cenário de infraestrutura; ela não significa, por si só, que o deploy esteja atualmente ativo ou disponível publicamente.
-
----
-
-## Equipe
-
-| Nome | RM |
-|---|---|
-| Eduardo Augusto de Oliveira Souza | RM565269 |
-| Fellipe Costa de Oliveira | RM564673 |
-| Felype Ferreira Maschio | RM563009 |
-| Gustavo Vieira de Matos | RM563304 |
-| Pedro Henrique dos Santos Costa | RM562156 |
-
----
-
-## Disciplina e Objetivo Acadêmico
-
-**Instituição:** FIAP  
-**Turma:** 2TDS  
-**Projeto:** Challenge Sprint 2026  
-**Disciplinas:** .NET e DevOps Tools & Cloud Computing
-
-O objetivo acadêmico é desenvolver uma API RESTful utilizando ASP.NET Core, persistência de dados, autenticação, documentação OpenAPI, monitoramento, observabilidade, testes automatizados e integração com ferramentas de infraestrutura e nuvem.
-
----
-
-## Sprint 4 — Autenticação, MongoDB e Integração
-
-Nesta etapa, o projeto foi ampliado com recursos de autenticação e integração com banco NoSQL, preservando a estrutura da API e os recursos implementados anteriormente.
-
-### Autenticação JWT
-
-- Emissão de tokens JWT.
-- Validação de assinatura, emissor, audiência e validade.
-- Proteção de endpoints com autorização.
-- Configuração do esquema Bearer no Swagger UI.
-- Testes de autenticação e acesso a endpoints protegidos.
-
-### MongoDB Atlas
-
-- Configuração da conexão por `MongoDbSettings`.
-- Registro do cliente MongoDB por injeção de dependência.
-- Integração com repositório para as operações previstas.
-- Endpoint dedicado para teste de conectividade.
-
-### Oracle e Health Check
-
-- Persistência relacional com Oracle Database e Entity Framework Core.
-- Verificação da conectividade do Oracle pelo endpoint `/health`.
-- Resposta de saúde com status geral e resultado das verificações registradas.
-
-### Validação final
-
-Durante a validação local relatada pela equipe, foram confirmados:
-
-- Build da aplicação concluído.
-- Swagger e autorização JWT testados.
-- Conexão com MongoDB Atlas funcionando.
-- Conexão com Oracle funcionando.
-- Health Check retornando `Healthy`.
-
+As aspas preservam os nomes de tabela e coluna utilizados pelo modelo no Oracle. Para demonstrar a entrega contínua, altere a resposta de `/versao`, envie o commit à `master`, acompanhe a execução automática e confira a nova resposta após o deploy.

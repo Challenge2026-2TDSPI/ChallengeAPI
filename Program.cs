@@ -217,6 +217,12 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
+app.MapGet("/versao", () => Results.Ok(new
+{
+    versao = "1.0",
+    mensagem = "Deploy automatizado pelo Azure DevOps"
+}));
+
 app.Run();
 
 public partial class Program
